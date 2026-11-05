@@ -336,6 +336,41 @@ const parseBudgetFromQuery = (query: string): number | null => {
 const formatVND = (price: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
 
+const findDirectTourMatch = (query: string, tours: Tour[]): Tour | null => {
+  const q = query.toLowerCase()
+  const sorted = [...tours].sort((a, b) => b.title.length - a.title.length)
+  for (const t of sorted) {
+    if (q.includes(t.title.toLowerCase())) return t
+  }
+  if (q.includes('vòng cung hà giang') || (q.includes('chinh phục') && q.includes('hà giang')) || (q.includes('hà giang') && (q.includes('3 ngày') || q.includes('mã pí lèng')))) {
+    return tours.find((t) => t.slug === 'ha-giang-loop') || null
+  }
+  if (q.includes('quản bạ') || q.includes('núi đôi')) {
+    return tours.find((t) => t.slug === 'quan-ba-twin-mountains') || null
+  }
+  if (q.includes('mù cang chải') || q.includes('mu cang chai') || q.includes('mâm xôi')) {
+    return tours.find((t) => t.slug === 'mu-cang-chai-harvest') || null
+  }
+  if (q.includes('mộc châu') || q.includes('moc chau') || q.includes('đồi chè trái tim')) {
+    return tours.find((t) => t.slug === 'moc-chau-tea-hills') || null
+  }
+  if (q.includes('hang én') || q.includes('hang en')) {
+    return tours.find((t) => t.slug === 'hang-en-cave') || null
+  }
+  if (q.includes('kinh bắc') || (q.includes('quan họ') && q.includes('bắc ninh')) || (q.includes('bắc ninh') && !q.includes('bắc kạn'))) {
+    return tours.find((t) => t.slug === 'bac-ninh-heritage' || t.location.toLowerCase().includes('bắc ninh')) || null
+  }
+  if (q.includes('côn đảo') || q.includes('con dao')) {
+    return tours.find((t) => t.slug === 'con-dao-blue') || null
+  }
+  if (q.includes('phú quốc') || q.includes('phu quoc')) {
+    return tours.find((t) => t.slug === 'phu-quoc-blue') || null
+  }
+  if (q.includes('tràng an') || q.includes('trang an')) {
+    return tours.find((t) => t.slug === 'ninh-binh-river') || null
+  }
+  return null
+}
 const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?: number | null): string => {
   const q = query.toLowerCase()
   const budget = forcedBudget !== undefined ? forcedBudget : parseBudgetFromQuery(q)
@@ -350,6 +385,49 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     return 'Dạ Đi Đâu AI được thiết kế chuyên biệt để đồng hành và tư vấn các hành trình du lịch bản địa sâu sắc trên website Đi Đâu thôi ạ. Rất mong bạn thông cảm nhé!\n\nNếu bạn đang ấp ủ một chuyến du ngoạn lên vùng cao săn mây ngắm lúa, về miền biển xanh cát trắng hay tìm về những miền di sản văn hóa an yên, bạn cứ chia sẻ cùng mình để chúng mình cùng lên kế hoạch nhé!'
   }
 
+  const northLocations = ['hà giang', 'cao bằng', 'bắc kạn', 'lào cai', 'yên bái', 'sơn la', 'quảng ninh', 'ninh bình', 'bắc ninh', 'hà nội', 'hải phòng']
+  const isAskingNorth = /(?:miền bắc|bắc bộ|vùng cao phía bắc|núi phía bắc)/i.test(q)
+  const isAskingCentral = /(?:miền trung|trung bộ)/i.test(q)
+  const isAskingSouth = /(?:miền nam|nam bộ|miền tây|sông nước)/i.test(q)
+
+  let targetDuration = ''
+  if (/3\s*ngày\s*2\s*đêm|3n2đ|3n2d/i.test(q)) targetDuration = '3 ngày 2 đêm'
+  else if (/2\s*ngày\s*1\s*đêm|2n1đ|2n1d/i.test(q)) targetDuration = '2 ngày 1 đêm'
+  else if (/1\s*ngày|trong ngày|ngay trong ngay/i.test(q)) targetDuration = '1 ngày'
+  else if (/5\s*ngày\s*4\s*đêm|5n4đ|5n4d/i.test(q)) targetDuration = '5 ngày 4 đêm'
+
+  // ƯU TIÊN SỐ 1: KHÁCH HỎI ĐÍCH DANH TÊN TOUR (Direct Tour Match)
+  const directMatch = findDirectTourMatch(q, tours)
+  if (directMatch) {
+    let reply = `Về chuyến ${directMatch.title} [TOUR:${directMatch.id}] tại ${directMatch.location}:\n\n`
+    reply += `Đây là hành trình ${directMatch.duration} với mức giá niêm yết chính xác là ${formatVND(directMatch.price)}/khách (đã bao gồm: ${directMatch.included}).\n\n`
+    reply += `Các điểm đến và trải nghiệm nổi bật trong chuyến đi gồm có: ${directMatch.highlights}. ${directMatch.summary}\n\n`
+    if (budget && directMatch.price > budget) {
+      reply += `(Lưu ý: Chuyến đi này có mức giá ${formatVND(directMatch.price)}/khách, cao hơn mức ngân sách ${formatVND(budget)} bạn từng chia sẻ một chút nhé).\n\n`
+    }
+    reply += `Bạn cần thêm thông tin chi tiết gì về lịch trình hoặc cách thức đặt chỗ cứ nhắn mình nhé!`
+    return reply
+  }
+
+  // ƯU TIÊN SỐ 2: ĐỐI CHIẾU GIAO ĐIỀU KIỆN (Vùng miền + Thời lượng + Ngân sách)
+  // Ví dụ: Ngân sách 3 triệu + 3 ngày 2 đêm + Miền Bắc
+  if (isAskingNorth && targetDuration === '3 ngày 2 đêm' && budget !== null && budget < 3890000) {
+    const hgTour = tours.find((t) => t.slug === 'ha-giang-loop') || tours.find((t) => t.location.toLowerCase().includes('hà giang'))
+    const affordableNorth = tours.filter((t) => t.active === 1 && northLocations.some((loc) => t.location.toLowerCase().includes(loc)) && t.price <= budget)
+    let reply = `Với mức ngân sách ${formatVND(budget)}/khách và thời lượng 3 ngày 2 đêm ở miền Bắc, hiện tại Đi Đâu chưa có hành trình nào đáp ứng trọn vẹn cả 3 tiêu chí này bạn nhé.\n\n`
+    if (hgTour) {
+      reply += `Chuyến 3 ngày 2 đêm ở miền Bắc hiện có tour ${hgTour.title} [TOUR:${hgTour.id}] nhưng mức giá niêm yết là ${formatVND(hgTour.price)}/khách (cao hơn ngân sách của bạn ${formatVND(hgTour.price - budget)}).\n\n`
+    }
+    if (affordableNorth.length > 0) {
+      reply += `Nếu bạn muốn ưu tiên giữ ngân sách dưới ${formatVND(budget)} ở miền Bắc, bạn có thể tham khảo các chuyến 2 ngày 1 đêm hoặc 1 ngày rất được yêu thích tại Đi Đâu:\n`
+      affordableNorth.slice(0, 3).forEach((t) => {
+        reply += `\n- ${t.title} [TOUR:${t.id}] tại ${t.location} (${t.duration}): Giá ${formatVND(t.price)}/khách. Điểm nổi bật: ${t.highlights}.`
+      })
+    }
+    reply += `\n\nBạn quan tâm đến hành trình nào hơn hoặc cần biết thêm thông tin cụ thể cứ nhắn mình nhé!`
+    return reply
+  }
+
   // Lọc các tour đang hoạt động. NẾU CÓ NGÂN SÁCH: BẮT BUỘC price <= budget (Luật cứng 5)
   let activeTours = tours.filter((t) => t.active === 1)
   if (budget !== null && budget > 0) {
@@ -359,7 +437,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     }
   }
 
-  // 2. Nhận diện và đính chính nhầm lẫn địa lý (Luật cứng 15: nhẹ nhàng, không bịa kiến thức ngoài)
+  // ƯU TIÊN SỐ 3: Nhận diện và đính chính nhầm lẫn địa lý (Luật cứng 15: nhẹ nhàng, không bịa kiến thức ngoài)
   if (q.includes('mộc châu') && (q.includes('hà giang') || q.includes('ở đâu') || q.includes('thuộc tỉnh'))) {
     const mocChauTour = activeTours.find((t) => t.slug === 'moc-chau-tea-hills') || activeTours.find((t) => t.title.toLowerCase().includes('mộc châu'))
     const hgTour = activeTours.find((t) => t.slug === 'ha-giang-loop') || activeTours.find((t) => t.title.toLowerCase().includes('hà giang'))
@@ -408,7 +486,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     return res
   }
 
-  // 3. Địa điểm KHÔNG CÓ TRONG DATA (Luật cứng 2 & 3: KHÔNG bịa đặc sản/danh lam bên ngoài, chỉ gợi ý tour có trong data)
+  // ƯU TIÊN SỐ 4: Địa điểm KHÔNG CÓ TRONG DATA (Luật cứng 2 & 3: KHÔNG bịa đặc sản/danh lam bên ngoài, chỉ gợi ý tour có trong data)
   const nonDataPlaces: { [key: string]: string } = {
     'thái nguyên': 'Thái Nguyên',
     'lạng sơn': 'Lạng Sơn',
@@ -447,7 +525,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     const highKeys = ['đắk nông', 'tà đùng']
 
     if (northKeys.some((k) => queryStr.includes(k))) {
-      const north = tourList.filter((t) => ['hà giang', 'sơn la', 'lào cai', 'yên bái', 'ninh bình', 'quảng ninh', 'bắc kạn', 'cao bằng'].some((loc) => t.location.toLowerCase().includes(loc)))
+      const north = tourList.filter((t) => northLocations.some((loc) => t.location.toLowerCase().includes(loc)))
       if (north.length > 0) return north
     }
     if (centralKeys.some((k) => queryStr.includes(k))) {
@@ -470,9 +548,9 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
       const regionalPool = getRegionalCandidates(q, activeTours)
       const picks = regionalPool.slice(0, 2)
       if (picks.length === 0) {
-        return `Hiện tại Đi Đâu chưa có hành trình tại ${placeName} trong danh sách tour đang khai thác bạn nhé.`
+        return `Hiện tại Đi Đâu chưa có hành trình du lịch tại ${placeName} trong danh sách tour đang khai thác bạn nhé.`
       }
-      let reply = `Hiện tại Đi Đâu chưa có hành trình tại ${placeName} trong danh sách tour đang khai thác bạn nhé.\n\nNếu bạn đang tìm một hành trình có trải nghiệm phù hợp${budget ? ' với ngân sách ' + formatVND(budget) : ''}, mình gợi ý bạn tham khảo chuyến ${picks[0].title} [TOUR:${picks[0].id}] tại ${picks[0].location}. Đây là hành trình ${picks[0].duration} với giá niêm yết ${formatVND(picks[0].price)}/khách, điểm nổi bật: ${picks[0].highlights}. ${picks[0].summary}`
+      let reply = `Hiện tại Đi Đâu chưa có hành trình du lịch tại ${placeName} trong danh sách tour đang khai thác bạn nhé.\n\nNếu bạn đang tìm một hành trình có trải nghiệm phù hợp${budget ? ' với ngân sách ' + formatVND(budget) : ''}, mình gợi ý bạn tham khảo chuyến ${picks[0].title} [TOUR:${picks[0].id}] tại ${picks[0].location}. Đây là hành trình ${picks[0].duration} với giá niêm yết ${formatVND(picks[0].price)}/khách, điểm nổi bật: ${picks[0].highlights}. ${picks[0].summary}`
       if (picks[1]) {
         reply += `\n\nNgoài ra, bạn cũng có thể cân nhắc thêm chuyến ${picks[1].title} [TOUR:${picks[1].id}] (${picks[1].duration}, giá ${formatVND(picks[1].price)}/khách) tại ${picks[1].location}.`
       }
@@ -480,61 +558,12 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     }
   }
 
-  // 4. Tìm kiếm theo tour cụ thể trong data
-  const scoredTours = activeTours.map((t) => {
-    let score = 0
-    const loc = t.location.toLowerCase()
-    const title = t.title.toLowerCase()
-    const hl = t.highlights.toLowerCase()
-
-    if (q.includes(title)) score += 30
-    if (title.includes('mộc châu') && q.includes('mộc châu')) score += 20
-    if (title.includes('tràng an') && q.includes('tràng an')) score += 18
-    if (title.includes('hà giang') && q.includes('hà giang')) score += 18
-    if (title.includes('mù cang chải') && q.includes('mù cang chải')) score += 18
-    if (title.includes('hội an') && q.includes('hội an')) score += 18
-    if (title.includes('đà nẵng') && q.includes('đà nẵng')) score += 18
-    if (title.includes('phong nha') && q.includes('phong nha')) score += 18
-    if (title.includes('hạ long') && q.includes('hạ long')) score += 18
-    if (title.includes('đà lạt') && q.includes('đà lạt')) score += 18
-    if (title.includes('phú quốc') && q.includes('phú quốc')) score += 18
-    if (title.includes('côn đảo') && q.includes('côn đảo')) score += 18
-    if (title.includes('măng đen') && q.includes('măng đen')) score += 18
-    if (title.includes('buôn ma thuột') && (q.includes('buôn ma thuột') || q.includes('đắk lắk'))) score += 18
-    if (title.includes('cần thơ') && q.includes('cần thơ')) score += 18
-    if (title.includes('ba bể') && (q.includes('ba bể') || q.includes('bắc kạn'))) score += 18
-    if (title.includes('tả van') && (q.includes('tả van') || q.includes('sa pa') || q.includes('sapa'))) score += 18
-
-    if (q.includes(loc)) score += 6
-    if (loc.includes('lâm đồng') && q.includes('đà lạt')) score += 8
-    if (loc.includes('lào cai') && (q.includes('sa pa') || q.includes('sapa'))) score += 8
-    if (loc.includes('quảng ninh') && q.includes('hạ long')) score += 8
-    if (loc.includes('kiên giang') && q.includes('phú quốc')) score += 8
-    if (loc.includes('bà rịa') && (q.includes('côn đảo') || q.includes('vũng tàu'))) score += 8
-    if (loc.includes('quảng nam') && q.includes('hội an')) score += 8
-    if (loc.includes('sơn la') && q.includes('mộc châu')) score += 10
-
-    if (q.includes('săn mây') && (hl.includes('săn mây') || title.includes('săn mây'))) score += 6
-    if (q.includes('biển') && (t.category === 'Biển đảo' || hl.includes('biển'))) score += 6
-
-    return { tour: t, score }
-  })
-
-  scoredTours.sort((a, b) => b.score - a.score)
-  const bestMatch = scoredTours[0]?.score > 0 ? scoredTours[0].tour : null
-
-  const isAskingPrice = /(?:giá|bao nhiêu tiền|hết bao nhiêu|chi phí|mấy tiền|giá vé|vé bao nhiêu)/i.test(q)
-  const isAskingDetails = /(?:chi tiết|mô tả|có gì|có những gì|tham quan|danh lam|thắng cảnh|địa điểm nào|sự kiện|chơi gì|trải nghiệm)/i.test(q)
-
-  if (bestMatch) {
-    if (isAskingPrice && !isAskingDetails) {
-      return `Dạ chuyến ${bestMatch.title} [TOUR:${bestMatch.id}] hiện có giá niêm yết chính xác là ${formatVND(bestMatch.price)}/khách cho hành trình ${bestMatch.duration} bạn nhé.\n\nTrong mức giá này, các dịch vụ bao gồm gồm có: ${bestMatch.included}. Điểm nổi bật của hành trình: ${bestMatch.highlights}. ${bestMatch.summary}`
-    }
-    return `Về chuyến ${bestMatch.title} [TOUR:${bestMatch.id}] tại ${bestMatch.location}:\n\nĐây là hành trình ${bestMatch.duration} với mức giá niêm yết chính xác là ${formatVND(bestMatch.price)}/khách (bao gồm: ${bestMatch.included}).\n\nCác điểm nổi bật trong hành trình gồm có: ${bestMatch.highlights}. ${bestMatch.summary}\n\nBạn cần thêm thông tin gì về chuyến đi này cứ cho mình biết nhé!`
-  }
-
-  // 5. Nếu hỏi theo ngân sách ("có 4 triệu đi đâu", "ngân sách 3tr"...)
+  // ƯU TIÊN SỐ 5: Tìm kiếm theo ngân sách và thể loại
   let candidates = [...activeTours]
+  if (isAskingNorth) {
+    const north = candidates.filter((t) => northLocations.some((loc) => t.location.toLowerCase().includes(loc)))
+    if (north.length > 0) candidates = north
+  }
   if (q.includes('biển') || q.includes('đảo') || q.includes('lặn')) {
     const bySea = candidates.filter((t) => t.category === 'Biển đảo' || t.title.toLowerCase().includes('biển'))
     if (bySea.length > 0) candidates = bySea
@@ -563,7 +592,6 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
   const t1 = picks[0]
   return `Nếu bạn đang tìm một chuyến đi trải nghiệm cảnh sắc thiên nhiên và văn hóa bản địa, mình gợi ý chuyến ${t1.title} [TOUR:${t1.id}] tại ${t1.location}. Hành trình ${t1.duration} này có giá niêm yết ${formatVND(t1.price)}/khách, nổi bật với: ${t1.highlights}. ${t1.summary}\n\nBạn cần tìm hiểu thêm thông tin về hành trình này cứ nhắn mình nhé!`
 }
-
 app.post('/chat', async (c) => {
   const body = await readJson<{ messages?: Array<{ role?: string; content?: string }> }>(c)
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
@@ -585,9 +613,24 @@ app.post('/chat', async (c) => {
   const latestUser = userMessages[userMessages.length - 1]
   const userQuery = latestUser ? latestUser.content : ''
 
-  // LUẬT CỨNG SỐ 6: Nhớ ngân sách xuyên suốt cuộc hội thoại
+  const revision = await c.env.CART.get('tours:revision') ?? '0'
+  const cacheKey = `tours:chat_catalog:${revision}`
+  let allTours = await c.env.CART.get<Tour[]>(cacheKey, 'json')
+  if (!allTours) {
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM tours WHERE active = 1 ORDER BY featured DESC, rating DESC'
+    ).all<Tour>()
+    allTours = results
+    await c.env.CART.put(cacheKey, JSON.stringify(allTours), { expirationTtl: 60 * 10 })
+  }
+
+  // 1. Kiểm tra xem người dùng có đang hỏi ĐÍCH DANH một tour cụ thể không
+  const directTourMatch = findDirectTourMatch(userQuery, allTours)
+
+  // 2. Nhận diện ngân sách:
+  // Nếu khách hỏi đích danh 1 tour, KHÔNG áp dụng ngân sách cũ để loại trừ tour đó!
   let extractedBudget = parseBudgetFromQuery(userQuery)
-  if (extractedBudget === null) {
+  if (extractedBudget === null && !directTourMatch) {
     for (let i = userMessages.length - 2; i >= 0; i--) {
       const prevBudget = parseBudgetFromQuery(userMessages[i].content)
       if (prevBudget !== null) {
@@ -608,17 +651,6 @@ app.post('/chat', async (c) => {
       return c.json({ error: 'Bạn đã hỏi khá nhiều lần. Hãy đợi một chút để Đi Đâu AI nghỉ ngơi nhé.' }, 429)
     }
     await c.env.CART.put(rateLimitKey, String(attempts + 1), { expirationTtl: 10 * 60 })
-  }
-
-  const revision = await c.env.CART.get('tours:revision') ?? '0'
-  const cacheKey = `tours:chat_catalog:${revision}`
-  let allTours = await c.env.CART.get<Tour[]>(cacheKey, 'json')
-  if (!allTours) {
-    const { results } = await c.env.DB.prepare(
-      'SELECT * FROM tours WHERE active = 1 ORDER BY featured DESC, rating DESC'
-    ).all<Tour>()
-    allTours = results
-    await c.env.CART.put(cacheKey, JSON.stringify(allTours), { expirationTtl: 60 * 10 })
   }
 
   let reply = ''
@@ -1528,7 +1560,15 @@ NGUYÊN TẮC CUỐI CÙNG:
 
 DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
 
-  if (c.env.AI && typeof c.env.AI.run === 'function') {
+  // NẾU CÓ XUNG ĐỘT GIAO ĐIỀU KIỆN (Ví dụ ngân sách 3 triệu + 3 ngày 2 đêm + Miền Bắc)
+  const isAskingNorth = /(?:miền bắc|bắc bộ|vùng cao phía bắc|núi phía bắc)/i.test(userQuery)
+  const isAsking3N2D = /3\s*ngày\s*2\s*đêm|3n2đ|3n2d/i.test(userQuery)
+  const hasConflict3N2DNorth = isAskingNorth && isAsking3N2D && extractedBudget !== null && extractedBudget < 3890000
+
+  if (hasConflict3N2DNorth || directTourMatch) {
+    // Sử dụng câu trả lời chuẩn xác trực tiếp để tránh AI bị ảo giác Hang Én hoặc đổi sai tour
+    reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+  } else if (c.env.AI && typeof c.env.AI.run === 'function') {
     try {
       const model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
       console.log('>>> Calling Workers AI with model:', model)
@@ -1547,6 +1587,21 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
               (aiResponse as any)?.response?.trim() ||
               (aiResponse as any)?.text?.trim() ||
               ''
+
+      // KIỂM SOÁT ĐẦU RA (Output Guardrail):
+      // Nếu khách hỏi Thái Nguyên mà AI lại bịa Tân Cương / Hồ Núi Cốc ngoài đời
+      if (userQuery.toLowerCase().includes('thái nguyên') && (reply.includes('Tân Cương') || reply.includes('Núi Cốc'))) {
+        reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+      }
+      // Nếu khách có ngân sách mà AI lại mang tour vượt ngân sách vào
+      if (extractedBudget !== null && !directTourMatch) {
+        for (const t of allTours) {
+          if (t.price > extractedBudget && reply.includes(t.title)) {
+            reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+            break
+          }
+        }
+      }
     } catch (err) {
       console.error('>>> Cloudflare Workers AI execution error:', err)
     }
@@ -1557,32 +1612,36 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
   }
 
   let suggestedTourIds: number[] = []
-  const matches = reply.matchAll(/\[TOUR:(\d+)\]/g)
-  for (const match of matches) {
-    const id = Number(match[1])
-    if (!suggestedTourIds.includes(id) && allTours.some((t) => t.id === id)) {
-      suggestedTourIds.push(id)
+  if (directTourMatch) {
+    suggestedTourIds = [directTourMatch.id]
+  } else {
+    const matches = reply.matchAll(/\[TOUR:(\d+)\]/g)
+    for (const match of matches) {
+      const id = Number(match[1])
+      if (!suggestedTourIds.includes(id) && allTours.some((t) => t.id === id)) {
+        suggestedTourIds.push(id)
+      }
     }
-  }
 
-  if (suggestedTourIds.length === 0) {
-    const lowerQ = userQuery.toLowerCase()
-    const matched = allTours.find((t) =>
-      lowerQ.includes(t.location.toLowerCase()) || lowerQ.includes(t.title.toLowerCase())
-    )
-    if (matched) suggestedTourIds.push(matched.id)
-  }
-
-  // LUẬT CỨNG SỐ 5 (Code Guardrail): Nếu có ngân sách, tuyệt đối loại bỏ mọi tour vượt ngân sách
-  if (extractedBudget !== null && extractedBudget > 0) {
-    suggestedTourIds = suggestedTourIds.filter((id) => {
-      const tour = allTours.find((t) => t.id === id)
-      return tour ? tour.price <= extractedBudget : false
-    })
     if (suggestedTourIds.length === 0) {
-      const withinBudget = allTours.filter((t) => t.price <= extractedBudget)
-      if (withinBudget.length > 0) {
-        suggestedTourIds.push(withinBudget[0].id)
+      const lowerQ = userQuery.toLowerCase()
+      const matched = allTours.find((t) =>
+        lowerQ.includes(t.location.toLowerCase()) || lowerQ.includes(t.title.toLowerCase())
+      )
+      if (matched) suggestedTourIds.push(matched.id)
+    }
+
+    // LUẬT CỨNG SỐ 5 (Code Guardrail): Nếu có ngân sách và không phải hỏi đích danh tour
+    if (extractedBudget !== null && extractedBudget > 0) {
+      suggestedTourIds = suggestedTourIds.filter((id) => {
+        const tour = allTours.find((t) => t.id === id)
+        return tour ? tour.price <= extractedBudget : false
+      })
+      if (suggestedTourIds.length === 0) {
+        const withinBudget = allTours.filter((t) => t.price <= extractedBudget)
+        if (withinBudget.length > 0) {
+          suggestedTourIds.push(withinBudget[0].id)
+        }
       }
     }
   }
