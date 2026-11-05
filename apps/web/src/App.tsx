@@ -43,6 +43,7 @@ export default function App() {
   const [maxPrice, setMaxPrice] = useState(10000000)
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [detailTour, setDetailTour] = useState<Tour | null>(null)
   const [adminOpen, setAdminOpen] = useState(false)
   const [lookupOpen, setLookupOpen] = useState(false)
   const [lookupResults, setLookupResults] = useState<OrderLookupResult[]>([])
@@ -242,7 +243,7 @@ export default function App() {
             <div className="empty-results"><span>◌</span><h3>Chưa tìm thấy chuyến đi phù hợp</h3><p>Thử đổi điểm đến hoặc nới ngân sách một chút nhé.</p><button className="outline-button" onClick={() => { setCategory(''); setSearch(''); setSubmittedSearch(''); setMaxPrice(10000000) }}>Xóa bộ lọc</button></div>
           ) : (
             <div className="tour-grid">
-              {tours.map((tour, index) => <TourCard key={tour.id} tour={tour} index={index} onAdd={() => run(api.add(tour.id), 'Đã thêm vào chuyến đi của bạn')} />)}
+              {tours.map((tour, index) => <TourCard key={tour.id} tour={tour} index={index} onDetails={() => setDetailTour(tour)} onAdd={() => run(api.add(tour.id), 'Đã thêm vào chuyến đi của bạn')} />)}
             </div>
           )}
           {featured.length > 0 && !submittedSearch && !category && (
@@ -399,6 +400,22 @@ export default function App() {
         </section>
       </div>}
 
+      {detailTour && <div className="modal-backdrop" onClick={() => setDetailTour(null)}>
+        <section className="tour-detail-modal" role="dialog" aria-modal="true" aria-labelledby="tour-detail-title" onClick={(event) => event.stopPropagation()}>
+          <button className="icon-button modal-close" onClick={() => setDetailTour(null)} aria-label="Đóng chi tiết trải nghiệm">×</button>
+          <img className="tour-detail-image" src={detailTour.image} alt={detailTour.image_alt} />
+          <div className="tour-detail-content">
+            <div className="tour-meta"><span>⌖ {detailTour.location} · {detailTour.category}</span><span>★ {detailTour.rating.toFixed(2)} <i>({detailTour.review_count} đánh giá)</i></span></div>
+            <h2 id="tour-detail-title">{detailTour.title}</h2>
+            <p className="tour-detail-summary">{detailTour.summary}</p>
+            <div className="tour-detail-facts"><div><span className="fact-label">Thời lượng hành trình</span><strong>{detailTour.duration}</strong></div><div><span className="fact-label">Giá trọn gói</span><strong className="fact-price">{vnd(detailTour.price)} <small>/ khách</small></strong></div></div>
+            <div className="tour-detail-section"><h3>Dấu ấn trải nghiệm nổi bật</h3><ul className="tour-highlights-list">{detailTour.highlights.split(' · ').map((item, idx) => <li key={idx}><span>✦</span> {item}</li>)}</ul></div>
+            <div className="tour-detail-section"><h3>Dịch vụ & Tiện ích đã bao gồm</h3><ul className="tour-included-list">{detailTour.included.split(' · ').map((item, idx) => <li key={idx}><span>✓</span> {item}</li>)}</ul></div>
+            <button className="button-dark full-button" onClick={() => { setDetailTour(null); run(api.add(detailTour.id), 'Đã thêm vào chuyến đi của bạn') }}>Thêm trải nghiệm vào chuyến đi <span>+</span></button>
+          </div>
+        </section>
+      </div>}
+
       {cartOpen && <div className="backdrop" onClick={() => setCartOpen(false)} />}
       <aside className={`cart-drawer ${cartOpen ? 'is-open' : ''}`} aria-hidden={!cartOpen}>
         <div className="drawer-heading"><div><span className="eyebrow">LỊCH TRÌNH CỦA BẠN</span><h2>Chuyến đi <span>({cart.count})</span></h2></div><button className="icon-button" onClick={() => setCartOpen(false)} aria-label="Đóng giỏ hàng">×</button></div>
@@ -445,15 +462,15 @@ export default function App() {
   )
 }
 
-function TourCard({ tour, index, onAdd }: { tour: Tour; index: number; onAdd: () => void }) {
+function TourCard({ tour, index, onDetails, onAdd }: { tour: Tour; index: number; onDetails: () => void; onAdd: () => void }) {
   return <article className={`tour-card ${index === 0 ? 'tour-card-featured' : ''}`}>
-    <div className="tour-image-wrap"><img className="tour-image" src={tour.image} alt={tour.image_alt} loading="lazy" />
-      <span className="tour-category">{tour.category}</span><button className="save-button" aria-label={`Lưu ${tour.title}`} onClick={(event) => { event.currentTarget.classList.toggle('is-saved'); event.currentTarget.textContent = event.currentTarget.classList.contains('is-saved') ? '♥' : '♡' }}>♡</button>
+    <div className="tour-image-wrap" onClick={onDetails} style={{ cursor: 'pointer' }} title="Xem chi tiết hành trình"><img className="tour-image" src={tour.image} alt={tour.image_alt} loading="lazy" />
+      <span className="tour-category">{tour.category}</span><button className="save-button" aria-label={`Lưu ${tour.title}`} onClick={(event) => { event.stopPropagation(); event.currentTarget.classList.toggle('is-saved'); event.currentTarget.textContent = event.currentTarget.classList.contains('is-saved') ? '♥' : '♡' }}>♡</button>
       {tour.featured === 1 && <span className="image-caption">ĐIĐÂU CHỌN</span>}
     </div>
     <div className="tour-details"><div className="tour-meta"><span>⌖ {tour.location}</span><span>★ {tour.rating.toFixed(2)} <i>({tour.review_count})</i></span></div>
-      <h3>{tour.title}</h3><p>{tour.summary}</p><div className="tour-highlights">{tour.highlights.split(' · ').slice(0, 2).join('　·　')}</div>
-      <div className="tour-card-bottom"><div><strong>{vnd(tour.price)}</strong><small> / khách · {tour.duration}</small></div><button className="add-trip" onClick={onAdd} aria-label={`Thêm ${tour.title} vào chuyến đi`}>+</button></div>
+      <h3 onClick={onDetails} style={{ cursor: 'pointer' }} title="Xem chi tiết hành trình">{tour.title}</h3><p>{tour.summary}</p><div className="tour-highlights">{tour.highlights.split(' · ').slice(0, 2).join('　·　')}</div>
+      <div className="tour-card-bottom"><div><strong>{vnd(tour.price)}</strong><small> / khách · {tour.duration}</small></div><div className="tour-card-actions"><button type="button" className="tour-detail-button" onClick={onDetails} title="Xem mô tả chi tiết trải nghiệm">Chi tiết <span>↗</span></button><button className="add-trip" onClick={onAdd} aria-label={`Thêm ${tour.title} vào chuyến đi`}>+</button></div></div>
     </div>
   </article>
 }
