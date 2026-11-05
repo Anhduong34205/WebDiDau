@@ -433,13 +433,14 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .admin-panel { width: min(1000px, 100%); max-height: min(94vh, 900px); display: flex; flex-direction: column; overflow: hidden; background: var(--paper); box-shadow: 0 20px 70px #14281d38; }
 .admin-panel:has(.admin-workspace) { width: min(1380px, 100%); height: min(900px, calc(100dvh - 36px)); max-height: 94vh; }
 .admin-workspace { min-height: 0; flex: 1; display: flex; background: #f7f7f3; }
-.admin-sidebar { width: 260px; flex: 0 0 260px; display: flex; flex-direction: column; padding: 23px 16px 16px; background: linear-gradient(165deg, #19392d, #142d24 72%); color: #e8eee8; }
+.admin-sidebar { width: 280px; flex: 0 0 280px; display: flex; flex-direction: column; padding: 23px 16px 16px; background: linear-gradient(165deg, #19392d, #142d24 72%); color: #e8eee8; }
 .admin-sidebar-brand { display: flex; align-items: center; gap: 9px; margin: 0 8px 30px; color: white; font-size: 22px; line-height: 1; }
 .admin-sidebar-brand > span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .admin-sidebar-brand small { color: #aab8ac; font-size: 12px; letter-spacing: 1.3px; }
-.admin-menu-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 9px 16px; }
-.admin-menu-label, .admin-nav-group-label { color: #9bab9f; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
-.admin-sidebar-version { color: #789080; font-size: 10px; letter-spacing: .8px; }
+.admin-menu-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 16px; white-space: nowrap; gap: 8px; }
+.admin-menu-label { color: #9bab9f; font-size: 11.5px; font-weight: 700; letter-spacing: .5px; white-space: nowrap; flex-shrink: 0; }
+.admin-nav-group-label { color: #9bab9f; font-size: 11.5px; font-weight: 700; letter-spacing: .8px; white-space: nowrap; }
+.admin-sidebar-version { color: #789080; font-size: 10px; letter-spacing: .8px; flex-shrink: 0; white-space: nowrap; }
 .admin-side-nav { display: grid; gap: 5px; }
 .admin-nav-group-label { margin: 12px 10px 5px; color: #80988a; font-size: 11px; }
 .admin-side-nav button { min-height: 56px; display: flex; align-items: center; gap: 11px; padding: 8px 12px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #d3ddd4; text-align: left; transition: background .18s ease, border-color .18s ease; }
