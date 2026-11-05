@@ -11,7 +11,7 @@ const STORAGE_KEY = 'didau-chat-messages-v1'
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'welcome-msg',
   role: 'assistant',
-  content: 'Chào bạn! Mình là Trợ lý Cố vấn Hành trình của Đi Đâu. Bạn đang ấp ủ một chuyến đi như thế nào? Cứ chia sẻ cùng mình về điểm đến yêu thích, số ngày đi hoặc mức ngân sách dự kiến nhé!',
+  content: 'Chào bạn! Mình là Trợ lý Cố vấn Hành trình của Đi Đâu. Mình hỗ trợ tư vấn các tour du lịch hiện có trên website Đi Đâu. Bạn đang quan tâm đến điểm đến, thời lượng hay mức ngân sách nào, cứ chia sẻ cùng mình nhé!',
   timestamp: Date.now(),
 }
 
