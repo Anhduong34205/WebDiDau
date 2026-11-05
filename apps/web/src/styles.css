@@ -254,7 +254,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .clear-cart { display: block; margin: 12px auto 0; border: 0; background: transparent; color: #888f85; font-size: 9px; text-decoration: underline; }
 
 .modal-backdrop { z-index: 40; display: grid; place-items: center; padding: 20px; }
-.checkout-modal, .success-modal { position: relative; width: min(490px, 100%); max-height: min(95vh, 780px); overflow-y: auto; padding: 31px 35px; background: var(--paper); box-shadow: 0 18px 70px #12231d30; }
+.checkout-modal { position: relative; width: min(580px, 100%); max-height: min(95vh, 840px); overflow-y: auto; padding: 31px 35px; background: var(--paper); box-shadow: 0 18px 70px #12231d30; }
+.success-modal { position: relative; width: min(530px, 100%); max-height: min(95vh, 840px); overflow-y: auto; padding: 35px 30px; background: var(--paper); box-shadow: 0 18px 70px #12231d30; text-align: center; }
 .tour-detail-modal { position: relative; width: min(650px, 94vw); max-height: min(92vh, 820px); overflow-y: auto; background: var(--paper); box-shadow: 0 18px 70px #12231d30; border-radius: 4px; }
 .tour-detail-modal .modal-close { position: absolute; top: 14px; right: 14px; z-index: 5; background: rgba(248,247,242,.95); box-shadow: 0 3px 10px rgba(0,0,0,.15); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .tour-detail-modal .modal-close:hover { background: #fff; color: var(--forest); }
@@ -281,9 +282,9 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .checkout-summary { margin: 17px 0 21px; padding: 13px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: #80877e; font-size: 10px; }
 .checkout-summary strong { float: right; color: var(--forest); }
 .checkout-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
-.checkout-form label, .admin-login label { display: flex; flex-direction: column; gap: 6px; color: #737c72; font-size: 9px; }
-.checkout-form input, .admin-login input { width: 100%; height: 40px; padding: 0 10px; border: 1px solid #e1e2d9; outline: 0; background: white; color: var(--ink); font-size: 10px; }
-.checkout-form input:focus, .admin-login input:focus, .editor-grid input:focus, .editor-grid textarea:focus { border-color: #73917d; }
+.checkout-form label:not(.payment-card), .admin-login label { display: flex; flex-direction: column; gap: 6px; color: #737c72; font-size: 9px; }
+.checkout-form input:not([type="radio"]):not([type="checkbox"]), .admin-login input { width: 100%; height: 40px; padding: 0 10px; border: 1px solid #e1e2d9; outline: 0; background: white; color: var(--ink); font-size: 10px; }
+.checkout-form input:not([type="radio"]):not([type="checkbox"]):focus, .admin-login input:focus, .editor-grid input:focus, .editor-grid textarea:focus { border-color: #73917d; }
 .checkout-form .full-button, .checkout-form > small, .form-error { grid-column: 1 / -1; }
 .checkout-form > small { margin-top: -6px; color: #8c9389; text-align: center; font-size: 8px; }
 .form-error { margin: 0; color: #a84031; font-size: 10px; }
@@ -295,6 +296,44 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .success-modal > p { color: #81887f; font-size: 10px; }
 .booking-code { display: inline-block; margin: 4px 0 8px; padding: 9px 14px; background: #e9eee2; color: var(--forest); font-size: 13px; letter-spacing: .8px; }
 .success-modal .success-total { margin-bottom: 25px; }
+
+
+/* Payment Methods & Bank Transfer (Demo) */
+.payment-section { grid-column: 1 / -1; margin-top: 4px; }
+.payment-section-title { font: 600 13px var(--serif); color: var(--forest); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.payment-section-title small { font-family: 'DM Sans', sans-serif; font-weight: normal; font-size: 10px; color: #858d84; }
+.payment-methods-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.payment-card { position: relative; border: 1.5px solid #dfe3db; border-radius: 6px; padding: 12px 10px; background: #fff; cursor: pointer; transition: all .2s ease; text-align: left; display: flex; flex-direction: column; gap: 5px; }
+.payment-card:hover { border-color: #a7b5a3; background: #fafbf9; }
+.payment-card.active { border-color: var(--forest); background: #f2f6ee; box-shadow: 0 3px 10px rgba(35,51,45,0.08); }
+.payment-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.payment-card-icon { font-size: 18px; line-height: 1; }
+.payment-card-radio { width: 16px !important; height: 16px !important; accent-color: var(--forest); margin: 0; cursor: pointer; flex-shrink: 0; }
+.payment-card-title { font-size: 11px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.payment-card-desc { font-size: 9px; color: #777f76; line-height: 1.35; margin: 0; }
+
+.bank-transfer-details { margin-top: 13px; padding: 16px; border: 1px solid #dbe3d6; border-radius: 6px; background: #fbfcf9; }
+.bank-selector-title { font-size: 10px; font-weight: 600; color: #5a6558; margin-bottom: 8px; }
+.bank-selector-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.bank-pill { padding: 6px 12px; border: 1px solid #cfd7ca; border-radius: 16px; background: #fff; color: #495447; font-size: 10px; font-weight: 500; cursor: pointer; transition: all .18s ease; }
+.bank-pill:hover { border-color: var(--forest); background: #f4f6f1; }
+.bank-pill.active { background: var(--forest); color: #fff; border-color: var(--forest); }
+.bank-info-container { display: grid; grid-template-columns: 135px 1fr; gap: 16px; align-items: center; }
+.bank-qr-wrap { display: flex; flex-direction: column; align-items: center; text-align: center; background: #fff; padding: 8px; border: 1px solid #e1e7dc; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+.bank-qr-img { width: 118px; height: 118px; object-fit: contain; display: block; }
+.bank-qr-caption { font-size: 8px; color: #858e83; margin-top: 5px; line-height: 1.3; }
+.bank-fields-list { display: grid; gap: 7px; }
+.bank-field-row { display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px dashed #e4eae0; font-size: 11px; }
+.bank-field-row:last-child { border-bottom: none; padding-bottom: 0; }
+.bank-field-label { color: #7f897d; font-size: 10px; }
+.bank-field-val { display: flex; align-items: center; gap: 6px; color: var(--forest); }
+.bank-field-val strong { font-family: var(--serif); font-size: 13px; letter-spacing: .3px; }
+.copy-btn { padding: 3px 8px; border: 1px solid #cfd7ca; border-radius: 4px; background: #fff; color: #556153; font-size: 9px; cursor: pointer; transition: all .15s ease; }
+.copy-btn:hover { background: #edf2e8; color: var(--forest); border-color: var(--forest); }
+.bank-demo-hint { margin: 12px 0 0; padding: 9px 12px; background: #edf3e7; border-left: 3px solid #73967d; font-size: 9px; color: #4e5e4f; line-height: 1.5; border-radius: 0 4px 4px 0; }
+
+.success-bank-box { margin: 18px 0 22px; padding: 16px; border: 1px solid #d4dec9; border-radius: 6px; background: #f9fbf7; text-align: left; }
+.success-bank-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; background: #e3ecd2; color: var(--forest); font-size: 10px; font-weight: 600; margin-bottom: 14px; }
 
 .admin-overlay { z-index: 50; display: grid; place-items: center; padding: 18px; }
 .admin-panel { width: min(1000px, 100%); max-height: min(94vh, 900px); display: flex; flex-direction: column; overflow: hidden; background: var(--paper); box-shadow: 0 20px 70px #14281d38; }
@@ -525,6 +564,10 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .modal-top h2 { font-size: 24px; }
   .checkout-form { grid-template-columns: 1fr; }
   .checkout-form .full-button, .checkout-form > small, .form-error { grid-column: 1; }
+  
+  .payment-methods-grid { grid-template-columns: 1fr; gap: 8px; }
+  .bank-info-container { grid-template-columns: 1fr; }
+  .bank-qr-wrap { width: 140px; margin: 0 auto; }
   .admin-overlay { padding: 0; }
   .admin-panel { width: 100%; height: 100%; max-height: 100%; }
   .admin-panel:has(.admin-workspace) { height: 100%; max-height: 100%; }

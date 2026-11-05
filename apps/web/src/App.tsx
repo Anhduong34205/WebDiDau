@@ -3,6 +3,37 @@ import { api, vnd, type Cart, type OrderLookupResult, type Tour } from './api'
 import AdminPanel from './AdminPanel'
 import AiChatWidget from './AiChatWidget'
 
+const DEMO_BANKS = [
+  {
+    code: 'MB',
+    name: 'MB Bank',
+    fullName: 'Ngân hàng Quân Đội (MB Bank)',
+    accountNumber: '0901234567',
+    accountName: 'CONG TY DU LICH DI DAU VIET NAM',
+  },
+  {
+    code: 'VCB',
+    name: 'Vietcombank',
+    fullName: 'Ngân hàng Ngoại Thương (Vietcombank)',
+    accountNumber: '1023847291',
+    accountName: 'CONG TY DU LICH DI DAU VIET NAM',
+  },
+  {
+    code: 'TCB',
+    name: 'Techcombank',
+    fullName: 'Ngân hàng Kỹ Thương (Techcombank)',
+    accountNumber: '1903888899',
+    accountName: 'CONG TY DU LICH DI DAU VIET NAM',
+  },
+  {
+    code: 'ACB',
+    name: 'ACB',
+    fullName: 'Ngân hàng Á Châu (ACB)',
+    accountNumber: '284729182',
+    accountName: 'CONG TY DU LICH DI DAU VIET NAM',
+  },
+]
+
 const emptyCart: Cart = { items: [], total: 0, count: 0 }
 const dateInAWeek = () => {
   const date = new Date()
