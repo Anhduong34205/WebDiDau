@@ -84,11 +84,30 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'instant' | 'bank_transfer' | 'later'>('bank_transfer')
+  const [selectedBankCode, setSelectedBankCode] = useState('MB')
   const [booking, setBooking] = useState<{
     orderNumber: string
     total: number
     paymentStatus: 'unpaid' | 'paid'
+    paymentMethodType?: 'instant' | 'bank_transfer' | 'later'
+    bankInfo?: {
+      code: string
+      name: string
+      fullName: string
+      accountNumber: string
+      accountName: string
+    }
   } | null>(null)
+
+  const copyText = (text: string, title: string) => {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setNotice(`Đã sao chép ${title}`)
+        window.setTimeout(() => setNotice(''), 2200)
+      }).catch(() => {})
+    }
+  }
 
   useEffect(() => {
     Promise.all([api.tours(), api.categories(), api.cart()])
@@ -113,7 +132,7 @@ export default function App() {
       setCart(nextCart)
       if (message) {
         setNotice(message)
-        window.setTimeout(() => setNotice(''), 2400)
+        window.setTimeout(() => setNotice(''), 4000)
       }
     }).catch((reason: Error) => setError(reason.message))
 
@@ -164,17 +183,21 @@ export default function App() {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     try {
+      const isPaidDemo = paymentMethod === 'instant' || paymentMethod === 'bank_transfer'
       const result = await api.order({
         name: String(form.get('name')),
         email: String(form.get('email')),
         phone: String(form.get('phone')),
         departureDate: String(form.get('departureDate')),
-        paymentDemo: form.get('paymentMethod') === 'demo',
+        paymentDemo: isPaidDemo,
       })
+      const currentBank = DEMO_BANKS.find((b) => b.code === selectedBankCode) || DEMO_BANKS[0]
       setBooking({
         orderNumber: result.orderNumber,
         total: result.total,
         paymentStatus: result.paymentStatus,
+        paymentMethodType: paymentMethod,
+        bankInfo: paymentMethod === 'bank_transfer' ? currentBank : undefined,
       })
       setCheckoutOpen(false)
       setCartOpen(false)
@@ -269,7 +292,7 @@ export default function App() {
           </div>
 
           {error && <div className="inline-error" role="alert">{error}<button onClick={() => setError('')} aria-label="Đóng thông báo">×</button></div>}
-          {notice && <div className="toast" role="status">{notice}</div>}
+          
           {loading ? <div className="loading-state">Đang tìm những hành trình thật hay…</div> : tours.length === 0 ? (
             <div className="empty-results"><span>◌</span><h3>Chưa tìm thấy chuyến đi phù hợp</h3><p>Thử đổi điểm đến hoặc nới ngân sách một chút nhé.</p><button className="outline-button" onClick={() => { setCategory(''); setSearch(''); setSubmittedSearch(''); setMaxPrice(10000000) }}>Xóa bộ lọc</button></div>
           ) : (
@@ -466,24 +489,245 @@ export default function App() {
           <label>Email<input name="email" type="email" autoComplete="email" required placeholder="ban@email.com" /></label>
           <label>Số điện thoại<input name="phone" type="tel" autoComplete="tel" required maxLength={30} placeholder="090 123 4567" /></label>
           <label>Ngày khởi hành<input name="departureDate" type="date" min={new Date().toISOString().slice(0, 10)} defaultValue={dateInAWeek()} required /></label>
-          <fieldset className="payment-options">
-            <legend>Thanh toán</legend>
-            <label><input type="radio" name="paymentMethod" value="demo" defaultChecked /> Thanh toán demo ngay <span>Giao dịch mô phỏng, không thu tiền thật</span></label>
-            <label><input type="radio" name="paymentMethod" value="later" /> Thanh toán sau <span>Giữ lịch, chưa thanh toán</span></label>
-          </fieldset>
+          <div className="payment-section">
+            <div className="payment-section-title">
+              <span>Phương thức thanh toán</span>
+              <small>Mô phỏng an toàn (Demo)</small>
+            </div>
+
+            <div className="payment-methods-grid">
+              <div
+                className={`payment-card ${paymentMethod === 'bank_transfer' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('bank_transfer')}
+              >
+                <div className="payment-card-head">
+                  <span className="payment-card-icon">🏛️</span>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="bank_transfer"
+                    checked={paymentMethod === 'bank_transfer'}
+                    onChange={() => setPaymentMethod('bank_transfer')}
+                    className="payment-card-radio"
+                  />
+                </div>
+                <strong className="payment-card-title">Chuyển khoản ngân hàng</strong>
+                <p className="payment-card-desc">Quét mã VietQR hoặc chuyển vào STK (Demo)</p>
+              </div>
+
+              <div
+                className={`payment-card ${paymentMethod === 'instant' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('instant')}
+              >
+                <div className="payment-card-head">
+                  <span className="payment-card-icon">💳</span>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="instant"
+                    checked={paymentMethod === 'instant'}
+                    onChange={() => setPaymentMethod('instant')}
+                    className="payment-card-radio"
+                  />
+                </div>
+                <strong className="payment-card-title">Thanh toán ngay (Demo)</strong>
+                <p className="payment-card-desc">Mô phỏng thanh toán trực tuyến tức thì</p>
+              </div>
+
+              <div
+                className={`payment-card ${paymentMethod === 'later' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('later')}
+              >
+                <div className="payment-card-head">
+                  <span className="payment-card-icon">⏱️</span>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="later"
+                    checked={paymentMethod === 'later'}
+                    onChange={() => setPaymentMethod('later')}
+                    className="payment-card-radio"
+                  />
+                </div>
+                <strong className="payment-card-title">Thanh toán sau</strong>
+                <p className="payment-card-desc">Giữ lịch trình, thanh toán khi khởi hành</p>
+              </div>
+            </div>
+
+            {paymentMethod === 'bank_transfer' && (
+              <div className="bank-transfer-details">
+                <div className="bank-selector-title">Chọn ngân hàng thụ hưởng (Demo):</div>
+                <div className="bank-selector-pills">
+                  {DEMO_BANKS.map((bank) => (
+                    <button
+                      type="button"
+                      key={bank.code}
+                      className={`bank-pill ${selectedBankCode === bank.code ? 'active' : ''}`}
+                      onClick={(e) => { e.preventDefault(); setSelectedBankCode(bank.code); }}
+                    >
+                      {bank.name}
+                    </button>
+                  ))}
+                </div>
+
+                {(() => {
+                  const currentBank = DEMO_BANKS.find((b) => b.code === selectedBankCode) || DEMO_BANKS[0];
+                  return (
+                    <div className="bank-info-container">
+                      <div className="bank-qr-wrap">
+                        <img
+                          className="bank-qr-img"
+                          src={`https://img.vietqr.io/image/${currentBank.code}-${currentBank.accountNumber}-compact.png?amount=${cart.total}&addInfo=DIDAU%20TOUR&accountName=${encodeURIComponent(currentBank.accountName)}`}
+                          alt="VietQR Demo"
+                          loading="lazy"
+                        />
+                        <span className="bank-qr-caption">Quét mã VietQR bằng App Ngân hàng</span>
+                      </div>
+                      <div className="bank-fields-list">
+                        <div className="bank-field-row">
+                          <span className="bank-field-label">Ngân hàng</span>
+                          <span className="bank-field-val"><strong>{currentBank.fullName}</strong></span>
+                        </div>
+                        <div className="bank-field-row">
+                          <span className="bank-field-label">Số tài khoản</span>
+                          <span className="bank-field-val">
+                            <strong>{currentBank.accountNumber}</strong>
+                            <button type="button" className="copy-btn" onClick={() => copyText(currentBank.accountNumber, 'số tài khoản')}>Sao chép</button>
+                          </span>
+                        </div>
+                        <div className="bank-field-row">
+                          <span className="bank-field-label">Chủ tài khoản</span>
+                          <span className="bank-field-val"><strong style={{ fontSize: '11px' }}>{currentBank.accountName}</strong></span>
+                        </div>
+                        <div className="bank-field-row">
+                          <span className="bank-field-label">Số tiền</span>
+                          <span className="bank-field-val">
+                            <strong>{vnd(cart.total)}</strong>
+                            <button type="button" className="copy-btn" onClick={() => copyText(String(cart.total), 'số tiền')}>Sao chép</button>
+                          </span>
+                        </div>
+                        <div className="bank-field-row">
+                          <span className="bank-field-label">Cú pháp CK</span>
+                          <span className="bank-field-val">
+                            <strong>DIDAU [SĐT của bạn]</strong>
+                            <button type="button" className="copy-btn" onClick={() => copyText('DIDAU DAT TOUR', 'cú pháp')}>Sao chép</button>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="bank-demo-hint">
+                  💡 Giao dịch hoàn toàn ở chế độ mô phỏng (Demo). Bạn không bị trừ tiền thật. Nhấn <strong>"Xác nhận đặt lịch"</strong> để hoàn tất đơn.
+                </div>
+              </div>
+            )}
+          </div>
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="button-dark full-button" type="submit">Xác nhận đặt lịch <span>↗</span></button>
           <small>Thanh toán demo chỉ dùng để trải nghiệm, không cần nhập thông tin thẻ.</small>
         </form>
       </section></div>}
 
-      {booking && <div className="modal-backdrop" onClick={() => setBooking(null)}><section className="success-modal" onClick={(event) => event.stopPropagation()}>
-        <button className="icon-button modal-close" onClick={() => setBooking(null)} aria-label="Đóng">×</button><span className="success-symbol">✓</span><div className="eyebrow">ĐÃ NHẬN YÊU CẦU ĐẶT LỊCH</div><h2>Hẹn bạn trên<br /><em>những nẻo đường.</em></h2><p>Mã đặt chỗ của bạn</p><strong className="booking-code">{booking.orderNumber}</strong><p className="success-total">Tổng cộng · {vnd(booking.total)}</p><p className={`receipt-payment ${booking.paymentStatus}`}>{booking.paymentStatus === 'paid' ? 'Đã thanh toán demo · Không thu tiền thật' : 'Chưa thanh toán · Bạn có thể thanh toán sau'}</p><button className="button-dark full-button" onClick={() => setBooking(null)}>Tuyệt vời <span>↗</span></button></section></div>}
+      {booking && (
+        <div className="modal-backdrop" onClick={() => setBooking(null)}>
+          <section className="success-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="icon-button modal-close" onClick={() => setBooking(null)} aria-label="Đóng">×</button>
+            <span className="success-symbol">✓</span>
+            <div className="eyebrow">ĐÃ NHẬN YÊU CẦU ĐẶT LỊCH</div>
+            <h2>Hẹn bạn trên<br /><em>những nẻo đường.</em></h2>
+            <p>Mã đặt chỗ của bạn</p>
+            <strong className="booking-code">{booking.orderNumber}</strong>
+            <p className="success-total">Tổng cộng · {vnd(booking.total)}</p>
+
+            {booking.paymentMethodType === 'bank_transfer' && booking.bankInfo ? (
+              <div className="success-bank-box">
+                <div className="success-bank-badge">
+                  <span>🏛️</span> Thanh toán chuyển khoản ngân hàng (Demo)
+                </div>
+                <div className="bank-info-container">
+                  <div className="bank-qr-wrap">
+                    <img
+                      className="bank-qr-img"
+                      src={`https://img.vietqr.io/image/${booking.bankInfo.code}-${booking.bankInfo.accountNumber}-compact.png?amount=${booking.total}&addInfo=DIDAU%20${booking.orderNumber}&accountName=${encodeURIComponent(booking.bankInfo.accountName)}`}
+                      alt="VietQR Demo"
+                      loading="lazy"
+                    />
+                    <span className="bank-qr-caption">Quét mã VietQR chuyển khoản</span>
+                  </div>
+                  <div className="bank-fields-list">
+                    <div className="bank-field-row">
+                      <span className="bank-field-label">Ngân hàng</span>
+                      <span className="bank-field-val"><strong>{booking.bankInfo.name}</strong></span>
+                    </div>
+                    <div className="bank-field-row">
+                      <span className="bank-field-label">Số tài khoản</span>
+                      <span className="bank-field-val">
+                        <strong>{booking.bankInfo.accountNumber}</strong>
+                        <button type="button" className="copy-btn" onClick={() => copyText(booking.bankInfo!.accountNumber, 'số tài khoản')}>Sao chép</button>
+                      </span>
+                    </div>
+                    <div className="bank-field-row">
+                      <span className="bank-field-label">Chủ tài khoản</span>
+                      <span className="bank-field-val"><strong style={{ fontSize: '11px' }}>{booking.bankInfo.accountName}</strong></span>
+                    </div>
+                    <div className="bank-field-row">
+                      <span className="bank-field-label">Số tiền</span>
+                      <span className="bank-field-val">
+                        <strong>{vnd(booking.total)}</strong>
+                        <button type="button" className="copy-btn" onClick={() => copyText(String(booking.total), 'số tiền')}>Sao chép</button>
+                      </span>
+                    </div>
+                    <div className="bank-field-row">
+                      <span className="bank-field-label">Nội dung CK</span>
+                      <span className="bank-field-val">
+                        <strong>DIDAU {booking.orderNumber}</strong>
+                        <button type="button" className="copy-btn" onClick={() => copyText(`DIDAU ${booking.orderNumber}`, 'nội dung')}>Sao chép</button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="bank-demo-hint">
+                  ✓ Hệ thống đã ghi nhận phương thức chuyển khoản Demo cho đơn <strong>{booking.orderNumber}</strong>. Chúc bạn có một hành trình đáng nhớ!
+                </p>
+              </div>
+            ) : (
+              <p className={`receipt-payment ${booking.paymentStatus}`}>
+                {booking.paymentStatus === 'paid' ? 'Đã thanh toán demo · Không thu tiền thật' : 'Chưa thanh toán · Bạn có thể thanh toán sau'}
+              </p>
+            )}
+
+            <button className="button-dark full-button" onClick={() => setBooking(null)}>
+              Tuyệt vời <span>↗</span>
+            </button>
+          </section>
+        </div>
+      )}
 
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} onChanged={() => {
         api.tours({ q: submittedSearch, category, sort, maxPrice }).then(setTours).catch((reason: Error) => setError(reason.message))
         api.categories().then(setCategories).catch((reason: Error) => setError(reason.message))
       }} />}
+
+      {notice && (
+        <div
+          className="toast"
+          role="status"
+          onClick={() => {
+            if (notice.includes('chuyến đi') || notice.includes('giỏ hàng')) {
+              setCartOpen(true);
+            }
+            setNotice('');
+          }}
+          title={notice.includes('chuyến đi') ? 'Bấm để mở giỏ hàng chuyến đi' : undefined}
+        >
+          <span className="toast-text">✓ {notice}</span>
+          {(notice.includes('chuyến đi') || notice.includes('giỏ hàng')) && (
+            <span className="toast-cta">Xem giỏ hàng ↗</span>
+          )}
+        </div>
+      )}
 
       <AiChatWidget
         allTours={tours}

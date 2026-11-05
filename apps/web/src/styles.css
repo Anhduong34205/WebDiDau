@@ -124,7 +124,66 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .outline-button { padding: 10px 17px; border: 1px solid #cad2c5; background: transparent; color: var(--forest); font-size: 10px; }
 .inline-error { display: flex; justify-content: space-between; align-items: center; margin: 0 0 18px; padding: 12px 15px; background: #fce8e2; color: #8b3425; font-size: 11px; }
 .inline-error button { border: 0; background: transparent; color: inherit; font-size: 19px; }
-.toast { position: fixed; right: 24px; bottom: 24px; z-index: 70; padding: 15px 20px; background: var(--forest); color: white; box-shadow: 0 8px 25px #15251c30; font-size: 12px; }
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 92px;
+  z-index: 120;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #172d22;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 30px;
+  box-shadow: 0 10px 30px rgba(15, 30, 22, 0.45);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  animation: toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.toast:hover {
+  background: #234433;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(15, 30, 22, 0.55);
+}
+.toast-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: #f4f6f1;
+}
+.toast-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #e5f2c4;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: background 0.18s ease;
+  white-space: nowrap;
+}
+.toast:hover .toast-cta {
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 .manifesto { width: min(1120px, 82vw); display: grid; grid-template-columns: 1.03fr .97fr; gap: 82px; align-items: center; margin: 133px auto 0; }
 .manifesto-image { position: relative; height: 465px; }
@@ -565,6 +624,18 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .checkout-form { grid-template-columns: 1fr; }
   .checkout-form .full-button, .checkout-form > small, .form-error { grid-column: 1; }
   
+  
+  .toast {
+    right: 18px;
+    bottom: 84px;
+    padding: 10px 14px;
+    font-size: 11px;
+    gap: 8px;
+  }
+  .toast-cta {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
   .payment-methods-grid { grid-template-columns: 1fr; gap: 8px; }
   .bank-info-container { grid-template-columns: 1fr; }
   .bank-qr-wrap { width: 140px; margin: 0 auto; }
