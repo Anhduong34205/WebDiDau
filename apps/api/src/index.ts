@@ -340,23 +340,23 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     'dịch thuật', 'bóng đá', 'nấu ăn'
   ]
   if (nonTravelTopics.some((topic) => q.includes(topic))) {
-    return 'Dạ Đi Đâu AI chỉ hỗ trợ tư vấn các tour và trải nghiệm du lịch hiện có trên website Đi Đâu thôi ạ. Rất mong bạn thông cảm nhé! Bạn có thể hỏi mình về các hành trình du lịch biển đảo, vùng cao hay văn hóa bản địa đang có trên website nhé.'
+    return 'Dạ Đi Đâu AI được thiết kế chuyên biệt để đồng hành và tư vấn các hành trình du lịch bản địa sâu sắc trên website Đi Đâu thôi ạ. Rất mong bạn thông cảm nhé!\n\nNếu bạn đang ấp ủ một chuyến du ngoạn lên vùng cao săn mây ngắm lúa, về miền biển xanh cát trắng hay tìm về những miền di sản văn hóa an yên, bạn cứ chia sẻ cùng mình để chúng mình cùng lên kế hoạch nhé!'
   }
 
   const activeTours = tours.filter((t) => t.active === 1)
 
-  // 2. Nhận diện và đính chính nhầm lẫn địa lý một cách thông minh, duyên dáng như người bản địa
+  // 2. Nhận diện và đính chính nhầm lẫn địa lý một cách thông minh, chi tiết, duyên dáng
   if (q.includes('mộc châu') && (q.includes('hà giang') || q.includes('ở đâu') || q.includes('thuộc tỉnh'))) {
     const mocChauTour = activeTours.find((t) => t.slug === 'moc-chau-tea-hills') || activeTours.find((t) => t.title.toLowerCase().includes('mộc châu'))
     const hgTour = activeTours.find((t) => t.slug === 'ha-giang-loop') || activeTours.find((t) => t.title.toLowerCase().includes('hà giang'))
-    let res = 'Mộc Châu mùa này mộng mơ lắm bạn ơi, nhưng thực ra Mộc Châu lại thuộc tỉnh Sơn La chứ không phải Hà Giang đâu nè!'
+    let res = 'Mộc Châu mùa này mộng mơ và trong trẻo lắm bạn ơi! Nhưng thực ra Mộc Châu lại thuộc tỉnh Sơn La xinh đẹp của vùng Tây Bắc, chứ không nằm ở Hà Giang đâu nè.'
     if (mocChauTour) {
-      res += ` Nếu bạn đang ấp ủ chuyến đi lên cao nguyên này, mình gợi ý bạn tham khảo tour ${mocChauTour.title} [TOUR:${mocChauTour.id}].\n\nHành trình ${mocChauTour.duration} này sẽ đưa bạn dạo bước giữa ${mocChauTour.highlights}. ${mocChauTour.summary} Chi phí trọn gói khoảng ${formatVND(mocChauTour.price)}/khách thôi.`
+      res += `\n\nNếu bạn đang ấp ủ một chuyến đi hòa mình vào thiên nhiên cao nguyên tươi mát, mình gợi ý bạn tham khảo ngay tour ${mocChauTour.title} [TOUR:${mocChauTour.id}]. Trong hành trình ${mocChauTour.duration} này, bạn sẽ được thảnh thơi dạo bước giữa những đồi chè Trái Tim xanh ngút ngàn, lạc vào thung lũng mận Nà Ka mùa hoa trắng muốt và khám phá nếp sống mộc mạc của người Thái ở bản Áng. ${mocChauTour.summary}\n\nChi phí trọn gói của chuyến đi hiện chỉ khoảng ${formatVND(mocChauTour.price)}/khách, đã bao trọn: ${mocChauTour.included}, rất thích hợp cho kỳ nghỉ tái tạo năng lượng dịp cuối tuần.`
     }
     if (hgTour) {
-      res += `\n\nHoặc nếu bạn vẫn thích chinh phục sự hùng vĩ của Hà Giang với sông Nho Quế và đèo Mã Pí Lèng, mình cũng có tour ${hgTour.title} [TOUR:${hgTour.id}] siêu đẹp luôn. Bạn đang nghiêng về trải nghiệm nhẹ nhàng hay phiêu lưu hơn để mình tư vấn nhé?`
+      res += `\n\nMặt khác, nếu bạn vẫn luôn mong muốn chinh phục sự kỳ vĩ của vùng cao nguyên đá địa đầu Tổ quốc, Đi Đâu cũng có hành trình ${hgTour.title} [TOUR:${hgTour.id}] (3 ngày 2 đêm, giá trọn gói ${formatVND(hgTour.price)}/khách). Bạn sẽ được đứng trên đỉnh đèo Mã Pí Lèng huyền thoại ngắm mây vờn đỉnh núi, ngồi thuyền lướt nhẹ trên dòng sông Nho Quế xanh biếc và khám phá Dinh Vua Mèo cổ kính.\n\nMột bên là Mộc Châu dịu dàng, an yên giữa thung lũng hoa mận; một bên là Hà Giang tráng lệ, đầy cảm giác phiêu lưu. Bạn đang nghiêng về phong cách chuyến đi nào hơn để mình tư vấn chi tiết lịch trình nhé?`
     } else {
-      res += '\n\nBạn có muốn mình tư vấn kỹ hơn về lịch trình chuyến Mộc Châu này không nhỉ?'
+      res += '\n\nBạn dự định đi Mộc Châu mấy ngày và muốn đi vào khoảng thời gian nào để mình hỗ trợ kiểm tra phòng và xe đưa đón chu đáo nhất cho bạn nhé?'
     }
     return res
   }
@@ -364,48 +364,36 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
   if ((q.includes('sa pa') || q.includes('sapa')) && q.includes('hà giang')) {
     const sapaTour = activeTours.find((t) => t.slug === 'sapa-cloud-hunting') || activeTours.find((t) => t.location.includes('Lào Cai'))
     const hgTour = activeTours.find((t) => t.slug === 'ha-giang-loop') || activeTours.find((t) => t.location.includes('Hà Giang'))
-    let res = 'Sa Pa cảnh sắc bồng bềnh mây ngàn rất đẹp, nhưng thực ra Sa Pa thuộc tỉnh Lào Cai chứ không nằm ở Hà Giang bạn nha!'
+    let res = 'Sa Pa quanh năm bồng bềnh trong sương mây tuyệt đẹp, nhưng thực ra Sa Pa thuộc tỉnh Lào Cai chứ không nằm ở Hà Giang bạn nha! Cả hai nơi đều là những viên ngọc quý của núi rừng phương Bắc nhưng mang hai phong vị rất riêng biệt.'
     if (sapaTour) {
-      res += ` Nếu bạn muốn săn mây Tây Bắc, chuyến ${sapaTour.title} [TOUR:${sapaTour.id}] tại Lào Cai sẽ cực kỳ hợp, chi phí khoảng ${formatVND(sapaTour.price)}/khách.`
+      res += `\n\nNếu bạn muốn tìm về những bản làng thanh bình để sống chậm và săn mây, chuyến ${sapaTour.title} [TOUR:${sapaTour.id}] tại Lào Cai sẽ cực kỳ vừa vặn. Trong ${sapaTour.duration}, bạn sẽ trekking qua thung lũng Mường Hoa thơ mộng, trải nghiệm nếp sinh hoạt của người Giáy ở bản Tả Van và thức giấc giữa biển mây bồng bềnh. Giá trọn gói chỉ ${formatVND(sapaTour.price)}/khách (đã gồm ${sapaTour.included}).`
     }
     if (hgTour) {
-      res += ` Còn nếu bạn muốn ngắm đèo Mã Pí Lèng kỳ vĩ thì chuyến ${hgTour.title} [TOUR:${hgTour.id}] tại Hà Giang là lựa chọn số một luôn nè.`
+      res += `\n\nCòn nếu bạn đam mê cảm giác chinh phục những cung đường đèo hùng vĩ bậc nhất Việt Nam, chuyến ${hgTour.title} [TOUR:${hgTour.id}] tại Hà Giang (giá ${formatVND(hgTour.price)}/khách) sẽ đưa bạn qua đèo Mã Pí Lèng và hẻm vực Tu Sản sâu thẳm.\n\nBạn thích không gian tĩnh lặng, thư thái ở Sa Pa hay muốn trải nghiệm hành trình khám phá địa hình kỳ vĩ ở Hà Giang hơn nè?`
     }
-    res += '\n\nBạn thích không khí tĩnh lặng ở bản làng Sa Pa hay thích đi cung đường đèo Hà Giang hơn?'
     return res
   }
 
   if (q.includes('côn đảo') && (q.includes('kiên giang') || q.includes('phú quốc'))) {
     const conDaoTour = activeTours.find((t) => t.slug === 'con-dao-blue') || activeTours.find((t) => t.location.includes('Côn Đảo'))
     const phuQuocTour = activeTours.find((t) => t.slug === 'phu-quoc-blue') || activeTours.find((t) => t.location.includes('Phú Quốc'))
-    let res = 'Côn Đảo là hòn đảo thiêng liêng tuyệt đẹp thuộc Bà Rịa - Vũng Tàu, chứ không phải Kiên Giang bạn nha (Kiên Giang nổi tiếng với đảo ngọc Phú Quốc).'
+    let res = 'Côn Đảo là quần đảo thiêng liêng và thanh bình thuộc tỉnh Bà Rịa - Vũng Tàu bạn nhé, chứ không thuộc Kiên Giang đâu nè! (Kiên Giang nổi tiếng với đảo ngọc Phú Quốc và quần đảo Nam Du).'
     if (conDaoTour) {
-      res += ` Nếu bạn muốn tìm chốn bình yên, biển trong xanh ngắt thì chuyến ${conDaoTour.title} [TOUR:${conDaoTour.id}] rất đáng để đi, giá khoảng ${formatVND(conDaoTour.price)}/khách.`
+      res += `\n\nNếu bạn đang tìm kiếm một chốn biển xanh ngắt nguyên sơ, không khí trong lành tuyệt đối và chiều sâu lịch sử lắng đọng, chuyến ${conDaoTour.title} [TOUR:${conDaoTour.id}] (3 ngày 2 đêm, giá ${formatVND(conDaoTour.price)}/khách) sẽ là hành trình vô cùng ý nghĩa. Bạn sẽ được ghé thăm Bãi Đầm Trầu cát trắng mịn, ngắm hoàng hôn trên biển và viếng Nghĩa trang Hàng Dương linh thiêng.`
     }
     if (phuQuocTour) {
-      res += ` Còn nếu bạn thích nghỉ dưỡng sôi động hơn thì đảo ngọc Phú Quốc với tour ${phuQuocTour.title} [TOUR:${phuQuocTour.id}] sẽ là lựa chọn tuyệt vời.`
+      res += `\n\nCòn nếu bạn thích kỳ nghỉ biển đảo hiện đại, sôi động hơn với hoạt động lặn ngắm san hô và ngắm hoàng hôn Sunset Sanato rực rỡ, tour ${phuQuocTour.title} [TOUR:${phuQuocTour.id}] tại Kiên Giang (giá ${formatVND(phuQuocTour.price)}/khách) sẽ rất lý tưởng.\n\nBạn thích một chuyến đi an yên, lắng đọng hay một kỳ nghỉ biển nhiều hoạt động trải nghiệm hơn nhỉ?`
     }
-    res += '\n\nBạn thích một chuyến đi an yên hay nghỉ dưỡng nhiều hoạt động hơn nhỉ?'
     return res
   }
 
   if (q.includes('tràng an') && (q.includes('quảng ninh') || q.includes('hạ long'))) {
     const ninhBinhTour = activeTours.find((t) => t.slug === 'ninh-binh-river') || activeTours.find((t) => t.location.includes('Ninh Bình'))
-    let res = 'Danh thắng Tràng An non nước hữu tình thuộc tỉnh Ninh Bình chứ không phải Quảng Ninh bạn nha! (Quảng Ninh nổi tiếng với kỳ quan Vịnh Hạ Long).'
+    let res = 'Quần thể danh thắng Tràng An non nước hữu tình thuộc tỉnh Ninh Bình chứ không phải Quảng Ninh bạn nha! (Quảng Ninh nổi tiếng với di sản Vịnh Hạ Long kỳ vĩ).'
     if (ninhBinhTour) {
-      res += ` Nếu bạn muốn xuôi thuyền ngắm núi non kỳ vĩ, mình gợi ý chuyến ${ninhBinhTour.title} [TOUR:${ninhBinhTour.id}], giá trọn gói chỉ khoảng ${formatVND(ninhBinhTour.price)}/khách.`
+      res += `\n\nNếu bạn muốn trải nghiệm cảm giác ngồi thuyền nan lướt nhẹ trên dòng sông xanh ngọc bích soi bóng núi đá vôi trùng điệp, chuyến ${ninhBinhTour.title} [TOUR:${ninhBinhTour.id}] (1 ngày, giá trọn gói ${formatVND(ninhBinhTour.price)}/khách) sẽ mang đến cho bạn một ngày khám phá trọn vẹn. Bạn sẽ được chèo thuyền xuyên qua các hang động kỳ ảo, ghé thăm Cố đô Hoa Lư ngàn năm lịch sử và thưởng thức đặc sản dê núi cơm cháy trứ danh.`
     }
-    res += '\n\nBạn có muốn mình chia sẻ thêm về trải nghiệm chèo thuyền ở Tràng An không nè?'
-    return res
-  }
-
-  if (q.includes('đà lạt') && (q.includes('đắk lắk') || q.includes('dak lak') || q.includes('buôn ma thuột'))) {
-    const dalatTour = activeTours.find((t) => t.slug === 'dalat-pine-escape') || activeTours.find((t) => t.location.includes('Lâm Đồng'))
-    let res = 'Thành phố ngàn hoa Đà Lạt se lạnh thuộc tỉnh Lâm Đồng bạn nha, còn Đắk Lắk nổi tiếng với thủ phủ cà phê Buôn Ma Thuột!'
-    if (dalatTour) {
-      res += ` Nếu bạn muốn trốn lên rừng thông hít thở không khí mát lành, chuyến ${dalatTour.title} [TOUR:${dalatTour.id}] sẽ cực kỳ phù hợp, giá trọn gói ${formatVND(dalatTour.price)}/khách.`
-    }
-    res += '\n\nBạn dự định đi Đà Lạt mấy ngày để mình gợi ý thêm điểm check-in chill nhé?'
+    res += '\n\nBạn dự định đi Tràng An vào dịp nào để mình tư vấn khung giờ đi thuyền vắng khách và chụp ảnh đẹp nhất nhé!'
     return res
   }
 
@@ -419,7 +407,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
   else if (/1\s*ngày|trong ngày|ngay trong ngay/i.test(q)) targetDuration = '1 ngày'
   else if (/5\s*ngày\s*4\s*đêm|5n4đ|5n4d/i.test(q)) targetDuration = '5 ngày 4 đêm'
 
-  // 3. Nhận diện các địa điểm CHƯA CÓ TRÊN WEB (Áp dụng đúng 3 Nhịp: Khen ngợi am hiểu -> Tiếc nuối nhẹ nhàng -> Bẻ lái thông minh)
+  // 3. Nhận diện các địa điểm CHƯA CÓ TRÊN WEB (Dài, sâu sắc, am hiểu văn hóa)
   type NeighborMapping = {
     keywords: string[]
     name: string
@@ -432,51 +420,51 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     {
       keywords: ['thái nguyên', 'thai nguyen'],
       name: 'Thái Nguyên',
-      highlightTrait: 'nhắc đến Thái Nguyên là mình nghĩ ngay đến những đồi chè Tân Cương xanh mướt và không khí trong lành',
+      highlightTrait: 'Nhắc đến Thái Nguyên là mình nghĩ ngay đến những đồi chè Tân Cương xanh ngắt trải dài tít tắp, hương cốm non thoang thoảng trong gió sớm và hồ Núi Cốc thơ mộng gắn liền với chuyện tình huyền thoại nàng Công chàng Cốc',
       suggestedQuery: (t) => t.slug === 'mu-cang-chai-harvest' || t.slug === 'ha-giang-loop' || t.location === 'Yên Bái' || t.location === 'Bắc Kạn',
-      suggestedVibe: 'không gian thiên nhiên yên bình và cảnh sắc đồi núi trập trùng tương tự'
+      suggestedVibe: 'không gian thiên nhiên đồi núi yên ả, hít thở bầu không khí trong trẻo và ngắm nhìn những nếp ruộng bậc thang tầng tầng lớp lớp'
     },
     {
       keywords: ['lạng sơn', 'lang son'],
       name: 'Lạng Sơn',
-      highlightTrait: 'Lạng Sơn với đỉnh Mẫu Sơn mờ sương và nét văn hóa vùng biên rất đặc sắc',
+      highlightTrait: 'Lạng Sơn với đỉnh Mẫu Sơn quanh năm mây mù bao phủ, thành nhà Mạc rêu phong cổ kính và nét văn hóa ẩm thực xứ Lạng độc đáo với vịt quay lá mắc mật trứ danh',
       suggestedQuery: (t) => t.slug === 'cao-bang-ban-gioc' || t.slug === 'ba-be-lake' || t.location === 'Cao Bằng' || t.location === 'Bắc Kạn',
-      suggestedVibe: 'cảnh sắc núi non kỳ vĩ và sông hồ thanh bình của miền Đông Bắc'
+      suggestedVibe: 'cảnh sắc núi non đại ngàn Đông Bắc tráng lệ, sông hồ phẳng lặng như gương và thác nước hùng vĩ'
     },
     {
       keywords: ['tuyên quang', 'tuyen quang', 'bắc giang', 'bac giang', 'phú thọ', 'phu tho', 'vĩnh phúc', 'vinh phuc', 'hải dương', 'hai duong', 'hưng yên', 'hung yen', 'thái bình', 'thai binh', 'nam định', 'nam dinh', 'hà nam', 'ha nam'],
       name: 'khu vực này',
-      highlightTrait: 'vùng đất này có bề dày văn hóa truyền thống và phong cảnh thôn quê rất yên bình',
+      highlightTrait: 'Vùng đất này mang đậm nét văn hóa truyền thống đồng bằng và trung du Bắc Bộ, với những cánh đồng lúa thanh bình, nếp làng cổ kính và con người chất phác đôn hậu',
       suggestedQuery: (t) => ['Bắc Kạn', 'Cao Bằng', 'Hà Giang', 'Ninh Bình', 'Lào Cai'].includes(t.location),
-      suggestedVibe: 'không gian thiên nhiên trong lành và di sản sông núi ấn tượng'
+      suggestedVibe: 'cảnh sắc thiên nhiên trong lành, kết hợp giữa di sản sông núi và trải nghiệm bản địa mộc mạc'
     },
     {
       keywords: ['nghệ an', 'nghe an', 'hà tĩnh', 'ha tinh', 'quảng trị', 'quang tri'],
-      name: 'Nghệ An / Hà Tĩnh',
-      highlightTrait: 'miền Trung xứ Nghệ nổi tiếng với biển xanh chan hòa và bề dày lịch sử hào hùng',
+      name: 'miền Trung xứ Nghệ',
+      highlightTrait: 'Miền đất xứ Nghệ - Hà Tĩnh nồng hậu với bờ biển Cửa Lò mát rượi, những đồi chè Thanh Chương uốn lượn bên sông Giăng và bề dày lịch sử văn hóa hào hùng',
       suggestedQuery: (t) => ['Quảng Bình', 'Huế', 'Đà Nẵng'].some((l) => t.location.includes(l)),
-      suggestedVibe: 'dải đất di sản miền Trung tráng lệ với kỳ quan hang động và cố đô trầm mặc'
+      suggestedVibe: 'dải đất di sản miền Trung tráng lệ, nơi hòa quyện giữa kỳ quan hang động thiên nhiên và nét trầm mặc sâu lắng của các kinh đô cổ'
     },
     {
       keywords: ['đắk nông', 'dak nong', 'đắc nông', 'tà đùng', 'ta dung'],
       name: 'Đắk Nông',
-      highlightTrait: 'hồ Tà Đùng ở Đắk Nông được ví như "vịnh Hạ Long trên cao nguyên" với cảnh sắc ngoạn mục',
+      highlightTrait: 'Hồ Tà Đùng ở Đắk Nông được mệnh danh là "vịnh Hạ Long của Tây Nguyên" với hơn 40 hòn đảo lớn nhỏ nhấp nhô trên mặt nước biếc, bao quanh bởi rừng nguyên sinh đại ngàn',
       suggestedQuery: (t) => ['Đắk Lắk', 'Kon Tum', 'Lâm Đồng'].includes(t.location),
-      suggestedVibe: 'không khí đại ngàn se lạnh và rừng thông bạt ngàn'
+      suggestedVibe: 'khí hậu cao nguyên se lạnh sảng khoái, rừng thông bạt ngàn và hương cà phê nồng nàn'
     },
     {
       keywords: ['tiền giang', 'tien giang', 'vĩnh long', 'vinh long', 'trà vinh', 'tra vinh', 'hậu giang', 'hau giang', 'sóc trăng', 'soc trang', 'bạc liêu', 'bac lieu', 'long an'],
       name: 'miền Tây sông nước',
-      highlightTrait: 'miền Tây với những con rạch rợp bóng dừa nước, vườn cây trĩu quả và người dân đôn hậu mộc mạc',
+      highlightTrait: 'Miền Tây sông nước trù phú với những miệt vườn cây trái trĩu quả ngát hương, tiếng đờn ca tài tử vang vọng trên dòng kênh xanh và nhịp sống chợ nổi rộn rã lúc sớm mai',
       suggestedQuery: (t) => ['Cần Thơ', 'Bến Tre', 'Đồng Tháp', 'An Giang', 'Cà Mau'].includes(t.location),
-      suggestedVibe: 'nhịp sống sông nước phương Nam êm đềm'
+      suggestedVibe: 'nhịp sống phương Nam êm đềm, ngồi xuồng ba lá len lỏi rặng dừa nước và thưởng thức sản vật đồng quê'
     },
     {
       keywords: ['thái lan', 'thailand', 'singapore', 'hàn quốc', 'korea', 'nhật bản', 'japan', 'châu âu', 'mỹ', 'bali', 'tokyo', 'seoul', 'bangkok'],
       name: 'quốc tế',
-      highlightTrait: 'những chuyến đi nước ngoài luôn mang lại nhiều trải nghiệm mới mẻ và thú vị',
+      highlightTrait: 'Những chuyến đi nước ngoài luôn mang lại rất nhiều trải nghiệm văn hóa và góc nhìn mới mẻ đầy hào hứng',
       suggestedQuery: (t) => ['Kiên Giang', 'Quảng Ninh', 'Khánh Hòa', 'Đà Nẵng'].includes(t.location),
-      suggestedVibe: 'những điểm đến thiên đường biển đảo và kỳ quan thiên nhiên thế giới tại Việt Nam'
+      suggestedVibe: 'những thiên đường biển đảo nguyên sơ và kỳ quan thiên nhiên thế giới tráng lệ ngay tại Việt Nam'
     }
   ]
 
@@ -495,8 +483,15 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     }
     const picks = suggestions.slice(0, 2)
     const t1 = picks[0]
+    const t2 = picks[1]
 
-    let body = `Thực ra ${matchedNeighbor.highlightTrait}! Tiếc một chút là hiện tại Đi Đâu chưa khai thác các hành trình tại ${placeWord}.\n\nNhưng nếu bạn đang tìm kiếm một chuyến đi có ${matchedNeighbor.suggestedVibe}, mình nghĩ chuyến ${t1.title} [TOUR:${t1.id}] sẽ cực kỳ hợp với bạn. Chi phí khoảng ${formatVND(t1.price)}/khách cho hành trình ${t1.duration}, bạn sẽ được trải nghiệm ${t1.highlights}.\n\nBạn có muốn mình tư vấn kỹ hơn về lịch trình chuyến này không nhỉ?`
+    let body = `${matchedNeighbor.highlightTrait}!\n\nTiếc một chút là hiện tại Đi Đâu chưa kịp khai thác các hành trình tour trực tiếp tại ${placeWord} để gửi tới bạn. Nhưng nếu bạn đang tìm kiếm một chuyến đi có ${matchedNeighbor.suggestedVibe}, mình nghĩ hai hành trình lân cận dưới đây sẽ cực kỳ vừa vặn với sở thích của bạn:\n\nThứ nhất là chuyến ${t1.title} [TOUR:${t1.id}]. Đây là hành trình ${t1.duration} với chi phí khoảng ${formatVND(t1.price)}/khách, đưa bạn khám phá ${t1.location}. Bạn sẽ được trải nghiệm ${t1.highlights}. ${t1.summary}`
+
+    if (t2) {
+      body += `\n\nHoặc bạn cũng có thể tham khảo thêm chuyến ${t2.title} [TOUR:${t2.id}] (${t2.duration}, giá khoảng ${formatVND(t2.price)}/khách) tại ${t2.location}. Chuyến đi nổi bật với ${t2.highlights}, mang đến cảm giác thư thái và trọn vẹn không kém.`
+    }
+
+    body += `\n\nGiữa những lựa chọn trên, bạn thấy hành trình nào phù hợp với gu du lịch của mình hơn? Hãy chia sẻ thêm với mình về số lượng người đi hoặc khoảng thời gian bạn dự định khởi hành để mình hỗ trợ bạn chu đáo nhất nhé!`
     return body
   }
 
@@ -580,12 +575,12 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
   scoredTours.sort((a, b) => b.score - a.score)
   const bestMatch = scoredTours[0]?.score > 0 ? scoredTours[0].tour : null
 
-  // Khi có tour khớp trên web (Áp dụng đúng 3 Nhịp: Đồng điệu -> Kể chuyện cảm xúc -> Báo giá & Chốt)
+  // Khi có tour khớp trên web: Trả lời DÀI, SÂU SẮC, GIÀU CHI TIẾT
   if (bestMatch) {
     if (isAskingPrice && !isAskingDetails) {
-      return `Dạ chuyến ${bestMatch.title} [TOUR:${bestMatch.id}] hiện có giá niêm yết chính xác là ${formatVND(bestMatch.price)}/khách cho hành trình ${bestMatch.duration} bạn nhé!\n\nMức giá này đã bao gồm trọn gói: ${bestMatch.included}. Trong suốt chuyến đi, bạn sẽ được thảnh thơi tận hưởng ${bestMatch.highlights}.\n\nBạn dự định đi vào khoảng thời gian nào để mình hỗ trợ kiểm tra chỗ trống giúp bạn nhé?`
+      return `Dạ chuyến ${bestMatch.title} [TOUR:${bestMatch.id}] hiện có giá niêm yết chính xác là ${formatVND(bestMatch.price)}/khách cho trọn vẹn hành trình ${bestMatch.duration} bạn nhé! Đây là mức chi phí đã được Đi Đâu tối ưu trọn gói để bạn có trải nghiệm chất lượng cao và chu đáo nhất.\n\nTrong mức giá này, bạn đã được bao gồm toàn bộ các dịch vụ cần thiết: ${bestMatch.included}. Suốt dọc hành trình, bạn không cần phải lo lắng về việc sắp xếp phương tiện hay các chi phí phát sinh lắt nhắt, chỉ cần thoải mái tận hưởng trọn vẹn vẻ đẹp của ${bestMatch.location}.\n\nXuyên suốt chuyến đi, bạn sẽ được ghé thăm và trải nghiệm các danh lam thắng cảnh nổi tiếng: ${bestMatch.highlights}. ${bestMatch.summary}\n\nBạn dự định đi vào dịp cuối tuần hay ngày thường, và đi nhóm bao nhiêu người để mình hỗ trợ kiểm tra tình trạng chỗ trống và giữ chỗ đẹp nhất cho bạn nhé?`
     }
-    return `Ôi lựa chọn khám phá ${bestMatch.location} thì tuyệt vời lắm bạn ơi! Chuyến ${bestMatch.title} [TOUR:${bestMatch.id}] là một trong những hành trình được du khách yêu thích nhất tại Đi Đâu.\n\nTrong hành trình ${bestMatch.duration} này, bạn sẽ được đắm chìm vào ${bestMatch.highlights}. ${bestMatch.summary}\n\nChi phí trọn gói khoảng ${formatVND(bestMatch.price)}/khách (đã bao gồm ${bestMatch.included}). Bạn có muốn mình chia sẻ thêm về lịch trình chi tiết chuyến này không nhỉ?`
+    return `Ôi lựa chọn khám phá ${bestMatch.location} thì tuyệt vời lắm bạn ơi! Chuyến ${bestMatch.title} [TOUR:${bestMatch.id}] là một trong những hành trình đặc sắc nhất tại Đi Đâu, được thiết kế để bạn cảm nhận trọn vẹn phong cảnh nguyên sơ và nếp sống bản địa thanh bình.\n\nTrong hành trình ${bestMatch.duration} này, bạn sẽ được đắm chìm vào những trải nghiệm không thể bỏ lỡ: ${bestMatch.highlights}. ${bestMatch.summary} Bạn sẽ có những khoảnh khắc thật sự lắng đọng, hít thở bầu không khí trong trẻo và lưu giữ những khung hình tuyệt đẹp cùng người thân thương.\n\nChi phí trọn gói của hành trình hiện là ${formatVND(bestMatch.price)}/khách. Mức giá này đã bao gồm đầy đủ: ${bestMatch.included}, đảm bảo bạn luôn được chăm sóc chu đáo từ nơi lưu trú cho đến các bữa ăn đậm đà hương vị địa phương.\n\nBạn đang lên kế hoạch khởi hành vào khoảng thời gian nào để mình chia sẻ thêm chi tiết lịch trình từng ngày và tư vấn ngày đi đẹp nhất cho bạn nhé?`
   }
 
   // 5. Nếu hỏi theo thời lượng
@@ -605,7 +600,12 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     const picks = durMatches.slice(0, 2)
     if (picks.length > 0) {
       const t1 = picks[0]
-      let body = `Nếu bạn đang tìm kiếm một chuyến đi đúng ${targetDuration}${budget ? ' trong ngân sách tầm ' + formatVND(budget) : ''}, mình gợi ý ngay chuyến ${t1.title} [TOUR:${t1.id}].\n\nHành trình đưa bạn khám phá ${t1.location} với những trải nghiệm nổi bật: ${t1.highlights}. Chi phí trọn gói khoảng ${formatVND(t1.price)}/khách.\n\nBạn có muốn mình tư vấn kỹ hơn về lịch trình chuyến này không nè?`
+      const t2 = picks[1]
+      let body = `Nếu bạn đang tìm kiếm một chuyến đi đúng ${targetDuration}${budget ? ' trong tầm ngân sách khoảng ' + formatVND(budget) : ''}, mình gợi ý ngay chuyến ${t1.title} [TOUR:${t1.id}].\n\nĐây là hành trình đưa bạn về với ${t1.location}, nơi bạn sẽ được thảnh thơi trải nghiệm: ${t1.highlights}. ${t1.summary} Mức chi phí trọn gói là ${formatVND(t1.price)}/khách, đã bao gồm đầy đủ: ${t1.included}.`
+      if (t2) {
+        body += `\n\nNgoài ra, bạn cũng có thể cân nhắc thêm chuyến ${t2.title} [TOUR:${t2.id}] (${t2.duration}, giá ${formatVND(t2.price)}/khách) tại ${t2.location} với những trải nghiệm nổi bật: ${t2.highlights}. ${t2.summary}`
+      }
+      body += `\n\nBạn thích không gian thư thái an yên hay muốn một hành trình năng động nhiều hoạt động trải nghiệm hơn để mình tư vấn kỹ hơn nhé?`
       return body
     }
   }
@@ -633,7 +633,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     if (hasIntent) {
       const picks = candidates.slice(0, 1)
       const t = picks[0]
-      return `Hiện tại Đi Đâu chưa khai thác tour tại địa điểm này bạn nha, chúng tôi sẽ sớm cập nhật thêm!\n\nTuy nhiên, nếu bạn đang tìm kiếm một chuyến đi trải nghiệm cảnh sắc thanh bình, mình gợi ý chuyến ${t.title} [TOUR:${t.id}] tại ${t.location} (${t.highlights}), chi phí khoảng ${formatVND(t.price)}/khách.\n\nBạn có muốn mình chia sẻ thêm thông tin về hành trình này không nhỉ?`
+      return `Hiện tại Đi Đâu chưa kịp khai thác tour du lịch trực tiếp tại địa điểm này bạn nha, chúng tôi sẽ sớm cập nhật thêm thông tin trong thời gian tới!\n\nTuy nhiên, nếu bạn đang tìm kiếm một chuyến đi trải nghiệm cảnh sắc thanh bình và nếp sống địa phương sâu sắc, mình gợi ý bạn tham khảo chuyến ${t.title} [TOUR:${t.id}] tại ${t.location}. Hành trình ${t.duration} này nổi bật với ${t.highlights}. ${t.summary} Chi phí trọn gói chỉ khoảng ${formatVND(t.price)}/khách.\n\nBạn có muốn mình chia sẻ thêm thông tin chi tiết về hành trình này không nhỉ?`
     }
   }
 
@@ -644,8 +644,8 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
 
   const t = selected[0]
   let body = budget
-    ? `Với mức ngân sách tầm ${formatVND(budget)}, mình nghĩ chuyến ${t.title} [TOUR:${t.id}] tại ${t.location} (${t.highlights}) sẽ cực kỳ vừa vặn với bạn, giá trọn gói ${formatVND(t.price)}/khách.\n\nBạn có muốn mình tư vấn kỹ hơn về hành trình này không nè?`
-    : `Nếu bạn đang lên kế hoạch cho chuyến đi sắp tới, mình gợi ý ngay chuyến ${t.title} [TOUR:${t.id}] tại ${t.location} (${t.highlights}), chi phí khoảng ${formatVND(t.price)}/khách.\n\nBạn có muốn mình tư vấn thêm về lịch trình này không nhỉ?`
+    ? `Với mức ngân sách tầm ${formatVND(budget)}, mình nghĩ chuyến ${t.title} [TOUR:${t.id}] tại ${t.location} sẽ cực kỳ vừa vặn và tối ưu cho bạn! Hành trình ${t.duration} này mang lại những trải nghiệm rất đáng giá: ${t.highlights}. ${t.summary}\n\nChi phí trọn gói chính xác là ${formatVND(t.price)}/khách, đã bao gồm đầy đủ: ${t.included}.\n\nBạn có muốn mình tư vấn kỹ hơn về lịch trình từng ngày của chuyến này không nè?`
+    : `Nếu bạn đang lên kế hoạch cho chuyến đi sắp tới, mình gợi ý ngay chuyến ${t.title} [TOUR:${t.id}] tại ${t.location}. Trong hành trình ${t.duration} này, bạn sẽ được tận hưởng: ${t.highlights}. ${t.summary}\n\nChi phí trọn gói khoảng ${formatVND(t.price)}/khách (đã bao gồm ${t.included}).\n\nBạn có muốn mình tư vấn thêm về thời gian khởi hành phù hợp nhất không nhỉ?`
 
   return body
 }
@@ -699,49 +699,43 @@ app.post('/chat', async (c) => {
     `[TOUR:${t.id}] "${t.title}" | Địa điểm: ${t.location} | Thể loại: ${t.category} | Thời lượng: ${t.duration} | Giá: ${t.price} VNĐ | Điểm nổi bật: ${t.highlights} | Bao gồm: ${t.included} | Tóm tắt: ${t.summary}`
   ).join('\n')
 
-  const systemPrompt = `Bạn là Trợ lý Cố vấn Hành trình của nền tảng du lịch "Đi Đâu" (didau.vn). Bạn am hiểu sâu sắc về địa lý, văn hóa du lịch Việt Nam và đang đóng vai một người bạn bản địa nhiệt tình tư vấn chuyến đi.
-Phương châm: "Đi chậm hơn. Nhớ lâu hơn."
+  const systemPrompt = `Bạn là Trợ lý Cố vấn Hành trình của nền tảng du lịch "Đi Đâu" (didau.vn). Bạn am hiểu sâu sắc về địa lý, văn hóa du lịch Việt Nam và đang đóng vai một người bạn bản địa nhiệt tình, chu đáo tư vấn chuyến đi.
+Phương châm của Đi Đâu: "Đi chậm hơn. Nhớ lâu hơn."
 
 DANH SÁCH TOÀN BỘ CÁC TOUR DU LỊCH ĐANG CÓ THẬT TRÊN WEBSITE ĐI ĐÂU:
 ${toursSummary}
 
-QUY TẮC BẮT BUỘC VỀ VĂN PHONG VÀ CÁCH TRẢ LỜI (KHÔNG DÙNG VĂN MẪU, PHẢI TỰ NHIÊN NHƯ NGƯỜI THẬT):
+QUY TẮC BẮT BUỘC VỀ VĂN PHONG VÀ CÁCH TRẢ LỜI:
 
-1. PHONG CÁCH TỰ NHIÊN, THÂN THIỆN:
-- Xưng hô "mình" và "bạn". Giọng điệu ấm áp, tự nhiên, nhã nhặn. Khuyến khích dùng các từ đệm (À, Ôi, Thực ra, Tiếc một chút là...).
+1. ĐỘ DÀI VÀ ĐỘ CHI TIẾT CAO (BẮT BUỘC):
+- Mỗi câu trả lời PHẢI ĐỦ DÀI, CHI TIẾT VÀ SÂU SẮC (khoảng 3 đến 5 đoạn văn, từ 200 đến 350 từ). Tuyệt đối không trả lời ngắn ngủn 1-2 câu.
+- Dẫn dắt người đọc như một cuốn cẩm nang du lịch sống động: Miêu tả chi tiết cảnh quan thiên nhiên, những trải nghiệm cụ thể tại từng danh thắng, nếp sống văn hóa và ẩm thực bản địa, giải thích rõ các dịch vụ bao gồm trong tour, và kết thúc bằng câu hỏi gợi mở thân tình.
+
+2. PHONG CÁCH TỰ NHIÊN, THÂN THIỆN NHƯ BẠN BẢN ĐỊA:
+- Xưng hô "mình" và "bạn". Giọng điệu ấm áp, tự nhiên, nhã nhặn. Tự nhiên sử dụng các từ đệm cảm xúc (À, Ôi, Thực ra, Tiếc một chút là, Bạn biết không...).
 - TUYỆT ĐỐI KHÔNG DÙNG CÁC NHÃN HAY ICON MÁY MÓC (Không dùng các gạch đầu dòng kiểu "🌿 Cảm hứng hành trình:", "📍 Các danh lam thắng cảnh:", "💡 Lời khuyên:").
-- Hãy viết thành các đoạn văn xuôi trôi chảy (2-3 câu/đoạn), có sự liên kết mượt mà và logic giữa các câu.
+- Chia thành các đoạn văn xuôi trôi chảy (2-3 câu mỗi đoạn), ngắt dòng thoáng mắt, liên kết mượt mà và logic.
 
-2. KHI ĐỊA ĐIỂM KHÁCH HỎI CÓ TRÊN WEB:
-- Nhịp 1 (Đồng điệu): Khen ngợi lựa chọn của khách hoặc thể hiện sự hào hứng với điểm đến đó.
-- Nhịp 2 (Kể chuyện): Mô tả sâu sắc, chân thực cảm giác, cảnh quan, trải nghiệm trong tour (dựa trên highlights, summary). Tránh liệt kê lịch trình khô khan.
-- Nhịp 3 (Báo giá & Chốt): Báo đúng giá niêm yết (VNĐ/khách) và lồng ghép tự nhiên vào câu nói (VD: "Chi phí khoảng X, đã bao trọn gói..."). Kết thúc bằng một câu hỏi gợi mở để khách phản hồi.
+3. KHI ĐỊA ĐIỂM KHÁCH HỎI CÓ TRÊN WEB (QUY TRÌNH 4 BƯỚC CHI TIẾT):
+- Bước 1 (Đồng điệu & Khơi gợi cảm xúc): Khen ngợi lựa chọn của khách, mở ra không gian và vẻ đẹp đặc trưng của vùng đất đó.
+- Bước 2 (Kể chuyện chi tiết hành trình & Cảnh sắc): Đi sâu vào từng điểm nhấn trong highlights và summary. Miêu tả cụ thể khách sẽ được ngắm gì, làm gì, cảm nhận thế nào, khám phá văn hóa và ẩm thực địa phương ra sao.
+- Bước 3 (Báo giá & Phân tích dịch vụ trọn gói): Báo đúng giá niêm yết (VNĐ/khách) cho thời lượng của tour. Phân tích rõ mức giá này đã bao trọn gói những gì (xe đưa đón, tiêu chuẩn lưu trú, ăn uống, vé thắng cảnh, hướng dẫn viên) để khách thấy sự an tâm và tối ưu.
+- Bước 4 (Chăm sóc & Gợi mở tương tác): Đặt câu hỏi mở chu đáo (ví dụ: khách dự định đi vào thời gian nào, đi cùng gia đình hay bạn bè để hỗ trợ kiểm tra lịch khởi hành đẹp nhất).
 - TUYỆT ĐỐI KHÔNG BỊA ĐẶT địa điểm, sự kiện hay giá tiền ngoài dữ liệu tour.
 
-3. KHI ĐỊA ĐIỂM KHÁCH HỎI CHƯA CÓ TRÊN WEB (VD: Thái Nguyên, Lạng Sơn, Nghệ An, Đắk Nông...):
-- Nhịp 1 (Khen ngợi & Am hiểu): Dùng 1 câu nêu bật đặc trưng nổi tiếng nhất của địa danh đó (VD: đồi chè, biển xanh, núi đá...) để khách thấy bạn rất rành rẽ.
-- Nhịp 2 (Thông báo nhẹ nhàng): Đừng dùng giọng điệu tổng đài. Hãy dùng từ nối mềm mại như "Tiếc một chút là hiện Đi Đâu chưa khai thác hành trình tại đây...".
-- Nhịp 3 (Bẻ lái thông minh): Phân tích cảnh sắc của nơi khách hỏi (thuộc hệ núi rừng hay biển đảo) và khéo léo gợi ý 1-2 tour lân cận hoặc có "vibe" tương đương đang có trên web kèm giá tiền và điểm nổi bật.
+4. KHI ĐỊA ĐIỂM KHÁCH HỎI CHƯA CÓ TRÊN WEB (VD: Thái Nguyên, Lạng Sơn, Nghệ An, Đắk Nông, Tiền Giang, Bắc Giang...):
+- Bước 1 (Khen ngợi & Thể hiện am hiểu sâu sắc): Dùng 1-2 câu nêu bật nét đặc trưng nổi tiếng nhất của địa danh đó (đồi chè, đặc sản, danh thắng, khí hậu) để khách thấy bạn rất rành rẽ về địa lý du lịch.
+- Bước 2 (Thông báo nhẹ nhàng & Tiếc nuối chân thành): "Tiếc một chút là hiện tại Đi Đâu chưa kịp khai thác các hành trình trực tiếp tại [Tên địa điểm] để gửi tới bạn..."
+- Bước 3 (Bẻ lái thông minh & Giới thiệu chi tiết 1-2 tour lân cận / cùng vibe): Phân tích gu du lịch của khách (yêu thích không gian núi rừng yên bình hay biển đảo mát lành) và giới thiệu chi tiết 1-2 tour đang có sẵn trên web với đầy đủ thời lượng, trải nghiệm nổi bật, giá tiền trọn gói.
+- Bước 4 (Hỏi mở hỗ trợ): Mời khách chia sẻ thêm về kế hoạch để tư vấn sâu hơn.
 
-4. PHÂN TÍCH THÔNG MINH & ĐÍNH CHÍNH ĐỊA LÝ NHẸ NHÀNG:
-- Nếu khách nhầm lẫn địa lý (ví dụ: "Tôi muốn đi Mộc Châu ở Hà Giang"), hãy khen điểm đến và đính chính thật duyên dáng, lịch sự như một lời nói đùa (VD: "Mộc Châu mộng mơ lắm, nhưng thực ra nó ở Sơn La cơ bạn ạ..."). Sau đó mới dẫn dắt giới thiệu tour cụ thể.
+5. PHÂN TÍCH THÔNG MINH & ĐÍNH CHÍNH ĐỊA LÝ NHẸ NHÀNG:
+- Nếu khách nhầm lẫn địa lý (ví dụ: "Tôi muốn đi Mộc Châu ở Hà Giang"), hãy khen điểm đến và đính chính thật duyên dáng, dí dỏm như người bản địa (VD: "Mộc Châu mùa này mộng mơ lắm bạn ơi, nhưng thực ra Mộc Châu lại thuộc tỉnh Sơn La chứ không phải Hà Giang đâu nè!").
+- Sau đó miêu tả chi tiết tour Mộc Châu (2 ngày 1 đêm, giá tiền, thung lũng mận Nà Ka, đồi chè Trái Tim, bản Áng).
+- Đồng thời nếu khách cũng tò mò về Hà Giang, hãy giới thiệu thêm cung đường đèo Mã Pí Lèng và sông Nho Quế của Hà Giang để khách dễ dàng so sánh và lựa chọn.
 
-5. ĐỊNH DẠNG HỆ THỐNG (BẮT BUỘC):
-- BẮT BUỘC gắn mã [TOUR:id] (với id là số thực tế của tour trong danh sách) ngay sát sau tên mỗi tour được nhắc đến để hệ thống hiển thị thẻ tour cho khách xem và đặt (VD: "...chuyến Khám phá Mộc Châu [TOUR:93] sẽ rất hợp...").
-
---- VÍ DỤ MẪU VỀ VĂN PHONG (BẮT BUỘC HỌC THEO CÁCH HÀNH VĂN NÀY) ---
-
-Ví dụ 1 (Khi khách hỏi địa điểm chưa có trên web):
-Khách: "Tôi muốn đi du lịch ở Thái Nguyên, có thể tư vấn giúp tôi không?"
-Bot: "Nhắc đến Thái Nguyên là mình nghĩ ngay đến những đồi chè Tân Cương xanh mướt và không khí vô cùng trong lành! Tiếc một chút là hiện tại Đi Đâu chưa khai thác các hành trình tại đây.
-Nhưng nếu bạn đang tìm kiếm một chuyến đi có không gian thiên nhiên yên bình và cảnh sắc đồi núi trập trùng tương tự, mình nghĩ chuyến Mùa vàng trên bậc thang mây Mù Cang Chải [TOUR:77] sẽ cực kỳ hợp với bạn. Chi phí khoảng 2.650.000 VNĐ/khách, bạn sẽ được đi giữa những sóng lúa vàng rực và ngắm nhìn đèo Khau Phạ tuyệt đẹp.
-Bạn có muốn mình tư vấn kỹ hơn về lịch trình chuyến này không nhỉ?"
-
-Ví dụ 2 (Khi khách hỏi nhầm địa lý):
-Khách: "Tôi muốn đi Mộc Châu, Mộc Châu ở Hà Giang đúng không?"
-Bot: "Mộc Châu mùa này mộng mơ lắm bạn ơi, nhưng thực ra Mộc Châu lại thuộc tỉnh Sơn La chứ không phải Hà Giang đâu nè! Nếu bạn đang ấp ủ chuyến đi lên cao nguyên này, mình gợi ý bạn tham khảo tour Mùa hoa mận trắng và Đồi chè trái tim Mộc Châu [TOUR:93].
-Hành trình 2 ngày 1 đêm này sẽ đưa bạn dạo bước giữa thung lũng mận Nà Ka trắng muốt và hít hà hương trà thơm ngát ở bản Áng. Giá trọn gói chỉ khoảng 2.150.000 VNĐ/khách thôi.
-Hoặc nếu bạn vẫn thích chinh phục sự hùng vĩ của Hà Giang với đèo Mã Pí Lèng, mình cũng có tour Chinh phục vòng cung Hà Giang [TOUR:1] siêu đẹp luôn. Bạn đang nghiêng về trải nghiệm nhẹ nhàng hay phiêu lưu hơn để mình tư vấn nhé?"
+6. ĐỊNH DẠNG HỆ THỐNG:
+- BẮT BUỘC gắn mã [TOUR:id] (với id là số thực tế của tour trong danh sách) ngay sát sau tên mỗi tour được nhắc đến để hệ thống hiển thị thẻ tour cho khách xem và đặt (VD: "...chuyến Mùa hoa mận trắng và Đồi chè trái tim Mộc Châu [TOUR:93]...").
 `;
 
   if (c.env.AI && typeof c.env.AI.run === 'function') {
@@ -753,7 +747,7 @@ Hoặc nếu bạn vẫn thích chinh phục sự hùng vĩ của Hà Giang vớ
           { role: 'system', content: systemPrompt },
           ...sanitizedMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
         ],
-        max_tokens: 1200,
+        max_tokens: 2048,
         temperature: 0.45,
       }) as { response?: string }
       console.log('>>> Workers AI raw response:', JSON.stringify(aiResponse))
