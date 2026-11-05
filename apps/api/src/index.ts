@@ -333,7 +333,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
   const q = query.toLowerCase()
   const budget = parseBudgetFromQuery(q)
 
-  // 1. Kiem tra cau hoi ngoai pham vi tour/du lich
+  // 1. Kiểm tra câu hỏi ngoài phạm vi tour/du lịch
   const nonTravelTopics = [
     'lập trình', 'code', 'python', 'javascript', 'html', 'css', 'toán', 'vật lý', 'hóa học',
     'chính trị', 'tin tức', 'thời sự', 'chứng khoán', 'crypto', 'bitcoin', 'thời tiết hôm nay',
@@ -346,7 +346,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
   const isAskingPrice = /(?:giá|bao nhiêu tiền|hết bao nhiêu|chi phí|mấy tiền|giá vé|vé bao nhiêu)/i.test(q)
   const isAskingDetails = /(?:chi tiết|mô tả|có gì|có những gì|tham quan|danh lam|thắng cảnh|địa điểm nào|sự kiện|chơi gì|trải nghiệm)/i.test(q)
 
-  // Phat hien thoi luong neu khach yeu cau
+  // Phát hiện thời lượng nếu khách yêu cầu
   let targetDuration = ''
   if (/3\s*ngày\s*2\s*đêm|3n2đ|3n2d/i.test(q)) targetDuration = '3 ngày 2 đêm'
   else if (/2\s*ngày\s*1\s*đêm|2n1đ|2n1d/i.test(q)) targetDuration = '2 ngày 1 đêm'
@@ -355,39 +355,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
 
   const activeTours = tours.filter((t) => t.active === 1)
 
-  // 2. Kiem tra xem nguoi dung co hoi ve mot dia diem CO TREN WEB khong
-  const matchedTour = activeTours.find((t) => {
-    const loc = t.location.toLowerCase()
-    const title = t.title.toLowerCase()
-    return q.includes(loc) || q.includes(title) ||
-      (loc.includes('quảng ninh') && (q.includes('hạ long') || q.includes('bình liêu'))) ||
-      (loc.includes('lào cai') && (q.includes('sa pa') || q.includes('sapa') || q.includes('fansipan'))) ||
-      (loc.includes('quảng nam') && (q.includes('hội an') || q.includes('mỹ sơn'))) ||
-      (loc.includes('bà rịa') && (q.includes('vũng tàu') || q.includes('côn đảo'))) ||
-      (loc.includes('kiên giang') && (q.includes('phú quốc') || q.includes('nam du'))) ||
-      (loc.includes('sơn la') && (q.includes('mộc châu') || q.includes('tà xùa'))) ||
-      (loc.includes('quảng bình') && (q.includes('phong nha') || q.includes('hang én'))) ||
-      (loc.includes('kon tum') && (q.includes('măng đen'))) ||
-      (loc.includes('bình thuận') && (q.includes('mũi né') || q.includes('phan thiết'))) ||
-      (loc.includes('hải phòng') && (q.includes('lan hạ') || q.includes('cát bà'))) ||
-      (loc.includes('đà nẵng') && q.includes('đà nẵng')) ||
-      (loc.includes('an giang') && (q.includes('trà sư') || q.includes('châu đốc'))) ||
-      (loc.includes('cà mau') && q.includes('cà mau')) ||
-      (loc.includes('đồng tháp') && (q.includes('đồng tháp') || q.includes('tràm chim') || q.includes('tháp mười'))) ||
-      (loc.includes('bến tre') && q.includes('bến tre')) ||
-      (loc.includes('tây ninh') && (q.includes('bà đen') || q.includes('tây ninh'))) ||
-      (loc.includes('gia lai') && (q.includes('gia lai') || q.includes('pleiku') || q.includes('biển hồ'))) ||
-      (loc.includes('đắk lắk') && (q.includes('đắk lắk') || q.includes('buôn ma thuột') || q.includes('hồ lắk')))
-  })
-
-  if (matchedTour) {
-    if (isAskingPrice && !isAskingDetails) {
-      return `Dạ tour **${matchedTour.title}** [TOUR:${matchedTour.id}] hiện có giá niêm yết chính xác là **${formatVND(matchedTour.price)}/khách** với thời lượng **${matchedTour.duration}**.\n\n• **Điểm tham quan nổi bật:** ${matchedTour.highlights}\n• **Dịch vụ đã bao gồm:** ${matchedTour.included}\n\nBạn có thể nhấn vào thẻ tour bên dưới để đặt chỗ trực tiếp nhé!`
-    }
-    return `Dạ Đi Đâu hiện có tour **${matchedTour.title}** [TOUR:${matchedTour.id}] khám phá ${matchedTour.location} (${matchedTour.duration} · **${formatVND(matchedTour.price)}**):\n\n• **Mô tả hành trình:** ${matchedTour.summary}\n• **Các địa điểm tham quan & trải nghiệm:** ${matchedTour.highlights}\n• **Dịch vụ bao gồm:** ${matchedTour.included}\n\nBạn có thể nhấn vào thẻ tour bên dưới để xem thêm thông tin chi tiết hoặc đặt giữ chỗ trước nhé!`
-  }
-
-  // 3. Kiem tra cac dia diem KHONG CO TREN WEB -> Bao chua co + goi y dia diem tuong tu / gan do
+  // 2. ƯU TIÊN KIỂM TRA ĐỊA ĐIỂM CHƯA CÓ TRÊN WEB TRƯỚC (Tránh match nhầm các từ ví von như "vịnh Hạ Long trên cao nguyên")
   type NeighborMapping = {
     keywords: string[]
     name: string
@@ -409,7 +377,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
       suggestedLocNames: 'Quảng Bình (Phong Nha, Hang Én), Cố đô Huế hoặc Đà Nẵng'
     },
     {
-      keywords: ['đắk nông', 'dak nong', 'đắc nông'],
+      keywords: ['đắk nông', 'dak nong', 'đắc nông', 'tà đùng', 'ta dung'],
       name: 'Đắk Nông',
       suggestedQuery: (t) => ['Đắk Lắk', 'Kon Tum', 'Lâm Đồng', 'Gia Lai'].includes(t.location),
       suggestedLocNames: 'Buôn Ma Thuột (Đắk Lắk), Măng Đen (Kon Tum) hoặc Đà Lạt'
@@ -449,12 +417,100 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     return `Dạ hiện tại chưa có tour du lịch ${placeWord} này, chúng tôi sẽ cập nhật sớm và bổ sung thông tin về địa điểm du lịch này!!\n\nTuy nhiên, Đi Đâu xin gợi ý bạn những địa điểm du lịch nổi tiếng gần chỗ đó (${matchedNeighbor.suggestedLocNames}) có hành trình tương tự đang có sẵn trên website:\n\n${pickList}\n\nBạn có thể tham khảo chi tiết các tour trên thẻ bên dưới nhé!`
   }
 
-  // 4. Neu hoi theo the loai / tieu chi khac
-  let candidates = [...activeTours]
-  if (targetDuration) {
-    const byDur = candidates.filter((t) => t.duration.toLowerCase().includes(targetDuration.toLowerCase()))
-    if (byDur.length > 0) candidates = byDur
+  // 3. TÍNH ĐIỂM KHỚP TOUR CHÍNH XÁC (Ưu tiên khớp Tên tour / Địa danh đặc thù trước)
+  const scoredTours = activeTours.map((t) => {
+    let score = 0
+    const loc = t.location.toLowerCase()
+    const title = t.title.toLowerCase()
+    const hl = t.highlights.toLowerCase()
+
+    // Khớp tên tour
+    if (q.includes(title)) score += 20
+    // Khớp địa danh cụ thể của từng tour
+    if (title.includes('tràng an') && q.includes('tràng an')) score += 15
+    if (title.includes('cúc phương') && q.includes('cúc phương')) score += 15
+    if (title.includes('sơn trà') && (q.includes('sơn trà') || q.includes('linh ứng') || q.includes('bàn cờ'))) score += 15
+    if (title.includes('hội an') && q.includes('hội an')) score += 15
+    if (title.includes('mỹ sơn') && q.includes('mỹ sơn')) score += 15
+    if (title.includes('bà nà') && (q.includes('bà nà') || q.includes('cầu vàng'))) score += 15
+    if (title.includes('phong nha') && q.includes('phong nha')) score += 15
+    if (title.includes('hang én') && q.includes('hang én')) score += 15
+    if (title.includes('hạ long') && q.includes('hạ long')) score += 15
+    if (title.includes('bình liêu') && q.includes('bình liêu')) score += 15
+    if (title.includes('hà giang') && q.includes('hà giang')) score += 15
+    if (title.includes('quản bạ') && q.includes('quản bạ')) score += 15
+    if (title.includes('mù cang chải') && q.includes('mù cang chải')) score += 15
+    if (title.includes('măng đen') && q.includes('măng đen')) score += 15
+    if (title.includes('buôn ma thuột') && (q.includes('buôn ma thuột') || q.includes('hồ lắk'))) score += 15
+    if (title.includes('biển hồ') && (q.includes('biển hồ') || q.includes('chư đăng ya') || q.includes('pleiku'))) score += 15
+    if (title.includes('vĩnh hy') && (q.includes('vĩnh hy') || q.includes('hang rái'))) score += 15
+    if (title.includes('mũi né') && (q.includes('mũi né') || q.includes('phan thiết'))) score += 15
+    if (title.includes('nam du') && q.includes('nam du')) score += 15
+    if (title.includes('phú quốc') && q.includes('phú quốc')) score += 15
+    if (title.includes('côn đảo') && q.includes('côn đảo')) score += 15
+    if (title.includes('vũng tàu') && q.includes('vũng tàu')) score += 15
+    if (title.includes('đà lạt') && (q.includes('đà lạt') || q.includes('tuyền lâm'))) score += 15
+    if (title.includes('tây ninh') && (q.includes('tây ninh') || q.includes('bà đen'))) score += 15
+    if (title.includes('bến tre') && q.includes('bến tre')) score += 15
+    if (title.includes('đồng tháp') && (q.includes('đồng tháp') || q.includes('tràm chim') || q.includes('tháp mười'))) score += 15
+    if (title.includes('cà mau') && (q.includes('cà mau') || q.includes('đất mũi'))) score += 15
+    if (title.includes('an giang') && (q.includes('trà sư') || q.includes('châu đốc'))) score += 15
+    if (title.includes('cần thơ') && (q.includes('cần thơ') || q.includes('cái răng'))) score += 15
+    if (title.includes('lan hạ') && (q.includes('lan hạ') || q.includes('cát bà'))) score += 15
+    if (title.includes('ba bể') && (q.includes('ba bể') || q.includes('bắc kạn'))) score += 15
+    if (title.includes('tả van') && (q.includes('sa pa') || q.includes('sapa') || q.includes('tả van'))) score += 15
+
+    // Khớp theo tỉnh/thành phố (location)
+    if (q.includes(loc)) score += 5
+    if (loc.includes('lâm đồng') && (q.includes('đà lạt') || q.includes('da lat'))) score += 8
+    if (loc.includes('lào cai') && (q.includes('sa pa') || q.includes('sapa') || q.includes('fansipan'))) score += 8
+    if (loc.includes('quảng ninh') && (q.includes('hạ long') || q.includes('bình liêu'))) score += 8
+    if (loc.includes('kiên giang') && (q.includes('phú quốc') || q.includes('nam du'))) score += 8
+    if (loc.includes('bà rịa') && (q.includes('vũng tàu') || q.includes('côn đảo'))) score += 8
+    if (loc.includes('quảng nam') && (q.includes('hội an') || q.includes('mỹ sơn'))) score += 8
+    if (loc.includes('quảng bình') && (q.includes('phong nha') || q.includes('hang én'))) score += 8
+    if (loc.includes('khánh hòa') && (q.includes('nha trang') || q.includes('cam ranh'))) score += 8
+    if (loc.includes('bình định') && (q.includes('quy nhơn') || q.includes('kỳ co'))) score += 8
+    if (loc.includes('ninh bình') && (q.includes('tràng an') || q.includes('cúc phương'))) score += 8
+    if (loc.includes('kon tum') && (q.includes('măng đen') || q.includes('kon tum'))) score += 8
+    if (loc.includes('đà nẵng') && q.includes('đà nẵng')) score += 8
+
+    // Khớp điểm nổi bật
+    if (q.includes('đèn lồng') && hl.includes('đèn lồng')) score += 6
+    if (q.includes('săn mây') && (hl.includes('săn mây') || title.includes('săn mây'))) score += 6
+    if (q.includes('lặn') && (hl.includes('lặn') || title.includes('lặn'))) score += 6
+
+    return { tour: t, score }
+  })
+
+  scoredTours.sort((a, b) => b.score - a.score)
+  const bestMatch = scoredTours[0]?.score > 0 ? scoredTours[0].tour : null
+
+  if (bestMatch) {
+    if (isAskingPrice && !isAskingDetails) {
+      return `Dạ tour **${bestMatch.title}** [TOUR:${bestMatch.id}] hiện có giá niêm yết chính xác là **${formatVND(bestMatch.price)}/khách** với thời lượng **${bestMatch.duration}**.\n\n• **Điểm tham quan nổi bật:** ${bestMatch.highlights}\n• **Dịch vụ đã bao gồm:** ${bestMatch.included}\n\nBạn có thể nhấn vào thẻ tour bên dưới để đặt chỗ trực tiếp nhé!`
+    }
+    return `Dạ Đi Đâu hiện có tour **${bestMatch.title}** [TOUR:${bestMatch.id}] khám phá ${bestMatch.location} (${bestMatch.duration} · **${formatVND(bestMatch.price)}**):\n\n• **Mô tả hành trình:** ${bestMatch.summary}\n• **Các địa điểm tham quan & trải nghiệm:** ${bestMatch.highlights}\n• **Dịch vụ bao gồm:** ${bestMatch.included}\n\nBạn có thể nhấn vào thẻ tour bên dưới để xem thêm thông tin chi tiết hoặc đặt giữ chỗ trước nhé!`
   }
+
+  // 4. NẾU KHÁCH HỎI THEO THỜI LƯỢNG (Ví dụ "3 ngày 2 đêm", "2 ngày 1 đêm", "1 ngày")
+  if (targetDuration) {
+    let durMatches = activeTours.filter((t) => t.duration.toLowerCase().includes(targetDuration.toLowerCase()))
+    if (budget) {
+      const withBud = durMatches.filter((t) => t.price <= budget)
+      if (withBud.length > 0) durMatches = withBud
+    }
+    const picks = durMatches.slice(0, 3)
+    if (picks.length > 0) {
+      const pickList = picks.map((t) =>
+        `• [TOUR:${t.id}] **${t.title}** (${t.location} · ${t.duration} · **${formatVND(t.price)}**)\n  - *Điểm tham quan:* ${t.highlights}\n  - *Trải nghiệm:* ${t.summary}`
+      ).join('\n\n')
+      return `Dưới đây là các hành trình đúng **${targetDuration}**${budget ? ' trong ngân sách ' + formatVND(budget) : ''} tuyệt vời đang có trên website Đi Đâu:\n\n${pickList}\n\nBạn có thể tham khảo chi tiết hoặc nhấn đặt tour ngay bên dưới nhé!`
+    }
+  }
+
+  // 5. NẾU KHÁCH HỎI THEO NGÂN SÁCH HOẶC THỂ LOẠI (Biển đảo, săn mây, nghỉ dưỡng...)
+  let candidates = [...activeTours]
   if (budget) {
     const withBudget = candidates.filter((t) => t.price <= budget)
     if (withBudget.length > 0) candidates = withBudget
@@ -472,7 +528,7 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     const byCulture = candidates.filter((t) => t.category === 'Văn hóa')
     if (byCulture.length > 0) candidates = byCulture
   } else {
-    // Co y dinh hoi dia diem du lich nhung khong khop tour nao tren web
+    // Có ý định hỏi một địa điểm du lịch lạ mà web hoàn toàn chưa có
     const hasIntent = ['tour', 'đi', 'ở', 'tại', 'du lịch', 'khám phá', 'chuyến đi', 'địa điểm', 'tỉnh'].some((k) => q.includes(k))
     if (hasIntent) {
       const picks = candidates.slice(0, 2)
@@ -488,8 +544,8 @@ const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
     return 'Dạ hiện tại chưa có tour du lịch này, chúng tôi sẽ cập nhật sớm và bổ sung thông tin về địa điểm du lịch này!! Bạn có thể tham khảo các hành trình đặc sắc khác đang có trên website Đi Đâu nhé!'
   }
 
-  const intro = budget || targetDuration
-    ? `Dưới đây là hành trình phù hợp nhất với tiêu chí của bạn (${targetDuration ? targetDuration + ' · ' : ''}${budget ? 'ngân sách ' + formatVND(budget) : ''}):`
+  const intro = budget
+    ? `Dưới đây là hành trình phù hợp nhất với ngân sách của bạn (${formatVND(budget)}):`
     : 'Dạ, để bạn cảm nhận trọn vẹn vẻ đẹp bản địa, Đi Đâu gợi ý cho bạn hành trình:'
 
   const list = selected.map((t) =>
@@ -524,9 +580,9 @@ app.post('/chat', async (c) => {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(clientIp))
     const ipHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
     const bucket = Math.floor(Date.now() / (10 * 60 * 1000))
-    const rateLimitKey = `chat-rate:${ipHash}:${bucket}`
+    const rateLimitKey = `chat-rate-v2:${ipHash}:${bucket}`
     const attempts = Number(await c.env.CART.get(rateLimitKey) ?? '0')
-    if (attempts >= 40) {
+    if (attempts >= 250) {
       return c.json({ error: 'Bạn đã hỏi khá nhiều lần. Hãy đợi một chút để Đi Đâu AI nghỉ ngơi nhé.' }, 429)
     }
     await c.env.CART.put(rateLimitKey, String(attempts + 1), { expirationTtl: 10 * 60 })
