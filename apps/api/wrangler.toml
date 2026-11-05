@@ -1,0 +1,23 @@
+name = "didau-travel"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Worker phục vụ luôn frontend (build từ apps/web), chỉ /api/* chạy qua Worker
+[assets]
+directory = "../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+# Tạo thật khi deploy:
+#   npx wrangler d1 create store-db      -> điền database_id
+#   npx wrangler kv namespace create CART -> điền id
+#   npx wrangler secret put ADMIN_TOKEN  -> thiết lập mã đăng nhập quản trị
+# Local development: add ADMIN_TOKEN="..." to apps/api/.dev.vars
+[[d1_databases]]
+binding = "DB"
+database_name = "store-db"
+database_id = "637417c1-ef8f-41ad-9e32-f1e438904e05"
+
+[[kv_namespaces]]
+binding = "CART"
+id = "8d12ccebda924e588a568461d86be1c0"
