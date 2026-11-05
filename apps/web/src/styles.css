@@ -582,7 +582,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .manifesto-copy h2 { font-size: 42px; }
   .admin-tour-management { grid-template-columns: 1fr; }
   .overview-sections-grid { grid-template-columns: 1fr; gap: 16px; }
-  .admin-sidebar { width: 215px; flex-basis: 215px; }
+  .admin-sidebar { width: 240px; flex-basis: 240px; }
+  .admin-menu-label { font-size: 10px; letter-spacing: .3px; }
   .admin-workspace .admin-body { padding: 21px 20px 28px; }
   .admin-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
