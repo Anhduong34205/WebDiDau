@@ -13,8 +13,7 @@ export default function AdminPanel({ onClose, onChanged }: { onClose: () => void
   const [authenticated, setAuthenticated] = useState(false)
   const [tours, setTours] = useState<Tour[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [tab, setTab] = useState<'overview' | 'orders' | 'tours'>('overview')
-  const [overviewFilter, setOverviewFilter] = useState<'all' | 'confirmed' | 'cancelled' | 'pending'>('all')
+  const [tab, setTab] = useState<'overview' | 'orders' | 'confirmed' | 'cancelled' | 'tours'>('overview')
   const [draft, setDraft] = useState<TourDraft>(blankTour)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -121,10 +120,18 @@ export default function AdminPanel({ onClose, onChanged }: { onClose: () => void
             <button className={tab === 'overview' ? 'active' : ''} aria-current={tab === 'overview' ? 'page' : undefined} onClick={() => setTab('overview')}>
               <span className="admin-nav-icon">⌂</span><span className="admin-nav-copy"><strong>Tổng quan</strong><small>Số liệu hoạt động</small></span><span className="admin-nav-arrow">↗</span>
             </button>
+
             <span className="admin-nav-group-label">ĐIỀU HÀNH</span>
             <button className={tab === 'orders' ? 'active' : ''} aria-current={tab === 'orders' ? 'page' : undefined} onClick={() => setTab('orders')}>
               <span className="admin-nav-icon">▤</span><span className="admin-nav-copy"><strong>Đơn đặt chỗ</strong><small>Theo dõi và xác nhận</small></span>{pendingOrders.length > 0 && <b className="admin-nav-count">{pendingOrders.length}</b>}
             </button>
+            <button className={tab === 'confirmed' ? 'active' : ''} aria-current={tab === 'confirmed' ? 'page' : undefined} onClick={() => setTab('confirmed')}>
+              <span className="admin-nav-icon">✓</span><span className="admin-nav-copy"><strong>Đã xác nhận</strong><small>Chuyến đi đã lên lịch</small></span>{confirmedOrders.length > 0 && <b className="admin-nav-count confirmed">{confirmedOrders.length}</b>}
+            </button>
+            <button className={tab === 'cancelled' ? 'active' : ''} aria-current={tab === 'cancelled' ? 'page' : undefined} onClick={() => setTab('cancelled')}>
+              <span className="admin-nav-icon">✕</span><span className="admin-nav-copy"><strong>Đã hủy</strong><small>Đơn đã hủy bỏ</small></span>{cancelledOrders.length > 0 && <b className="admin-nav-count cancelled">{cancelledOrders.length}</b>}
+            </button>
+
             <span className="admin-nav-group-label">NỘI DUNG</span>
             <button className={tab === 'tours' ? 'active' : ''} aria-current={tab === 'tours' ? 'page' : undefined} onClick={() => setTab('tours')}>
               <span className="admin-nav-icon">✳</span><span className="admin-nav-copy"><strong>Trải nghiệm</strong><small>Quản lý tour và điểm đến</small></span><b className="admin-nav-count">{tours.length}</b>
@@ -137,339 +144,95 @@ export default function AdminPanel({ onClose, onChanged }: { onClose: () => void
           {error && <div className="inline-error admin-error" role="alert">{error}<button onClick={() => setError('')} aria-label="Đóng thông báo">×</button></div>}
           <div className="admin-body">
           {tab === 'overview' ? <section className="admin-overview">
+            <div className="admin-page-heading"><div><span className="eyebrow">ĐIĐÂU · WORKSPACE</span><h2>Tổng quan</h2><p>Chào bạn, đây là tình hình hoạt động hôm nay.</p></div><time>{currentDate}</time></div>
+            <div className="admin-stat-grid">
+              <article className="admin-stat-card"><span className="admin-stat-icon">▤</span><div><small>Tổng đơn đặt chỗ</small><strong>{orders.length}</strong><span>Tất cả yêu cầu đặt chuyến</span></div></article>
+              <article className="admin-stat-card pending"><span className="admin-stat-icon">◷</span><div><small>Chờ xác nhận</small><strong>{pendingOrders.length}</strong><span>Cần bạn phản hồi</span></div></article>
+              <article className="admin-stat-card confirmed"><span className="admin-stat-icon">✓</span><div><small>Đã xác nhận</small><strong>{confirmedOrders.length}</strong><span>Chuyến đi đã lên lịch</span></div></article>
+              <article className="admin-stat-card revenue"><span className="admin-stat-icon">↗</span><div><small>Doanh thu xác nhận</small><strong>{vnd(confirmedRevenue)}</strong><span>Từ các đơn đã xác nhận</span></div></article>
+            </div>
+            <section className="admin-recent-orders">
+              <div className="admin-section-heading"><div><span className="eyebrow">MỚI NHẤT</span><h3>Đơn đặt chỗ gần đây</h3></div><button onClick={() => setTab('orders')}>Xem tất cả ↗</button></div>
+              {recentOrders.length === 0 ? <div className="admin-empty">Chưa có yêu cầu đặt chỗ nào.</div> : <div className="admin-recent-list">
+                {recentOrders.map((order) => <article className="admin-recent-row" key={order.id}>
+                  <span className="admin-recent-avatar">✳</span>
+                  <div className="admin-recent-customer"><strong>{order.customer_name}</strong><small>{order.order_number} · {order.items || 'Chuyến đi'}</small></div>
+                  <time>{new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(order.created_at))}</time>
+                  <span className={`status status-${order.status}`}>{order.status === 'pending' ? 'Chờ xác nhận' : order.status === 'confirmed' ? 'Đã xác nhận' : 'Đã hủy'}</span>
+                  <strong className="admin-recent-total">{vnd(order.total)}</strong>
+                </article>)}
+              </div>}
+            </section>
+          </section> : tab === 'orders' ? <div className="admin-orders-tab">
             <div className="admin-page-heading">
               <div>
-                <span className="eyebrow">ĐIĐÂU · WORKSPACE</span>
-                <h2>Tổng quan</h2>
-                <p>Chào bạn, đây là tình hình hoạt động và quản lý các mục đơn đặt chỗ hôm nay.</p>
+                <span className="eyebrow">ĐIỀU HÀNH</span>
+                <h2>Đơn đặt chỗ</h2>
+                <p>Theo dõi và cập nhật trạng thái các yêu cầu đặt chỗ ({orders.length} đơn).</p>
               </div>
-              <time>{currentDate}</time>
             </div>
-
-            <div className="admin-stat-grid">
-              <article
-                className={`admin-stat-card ${overviewFilter === 'all' ? 'active-filter' : ''}`}
-                onClick={() => setOverviewFilter('all')}
-                title="Bấm để xem tất cả đơn"
-              >
-                <span className="admin-stat-icon">▤</span>
-                <div>
-                  <small>Tổng đơn đặt chỗ</small>
-                  <strong>{orders.length}</strong>
-                  <span>Tất cả yêu cầu đặt chuyến</span>
+            <div className="admin-orders">
+              {orders.length === 0 && <div className="admin-empty">Chưa có yêu cầu đặt chỗ nào.</div>}
+              {orders.map((order) => <article className="admin-order" key={order.id}>
+                <div className="order-top"><strong>{order.order_number}</strong><span className={`status status-${order.status}`}>{order.status === 'pending' ? 'Chờ xác nhận' : order.status === 'confirmed' ? 'Đã xác nhận' : 'Đã hủy'}</span></div>
+                <h3>{order.customer_name}</h3><p>{order.email} · {order.phone}</p><p>{order.items || 'Chuyến đi'} · Khởi hành {order.departure_date}</p>
+                <div className="order-payment">
+                  <span className="order-payment-label">Thanh toán</span>
+                  <span className={`payment-status payment-${order.payment_status}`}>
+                    <i aria-hidden="true" />
+                    {order.payment_status === 'paid' ? 'Đã thanh toán · Demo' : 'Chưa thanh toán'}
+                  </span>
                 </div>
-              </article>
-
-              <article
-                className={`admin-stat-card pending ${overviewFilter === 'pending' ? 'active-filter' : ''}`}
-                onClick={() => setOverviewFilter('pending')}
-                title="Bấm để xem đơn chờ xác nhận"
-              >
-                <span className="admin-stat-icon">◷</span>
-                <div>
-                  <small>Chờ xác nhận</small>
-                  <strong>{pendingOrders.length}</strong>
-                  <span>Cần bạn phản hồi</span>
-                </div>
-              </article>
-
-              <article
-                className={`admin-stat-card confirmed ${overviewFilter === 'confirmed' ? 'active-filter' : ''}`}
-                onClick={() => setOverviewFilter('confirmed')}
-                title="Bấm để xem mục đơn đã xác nhận"
-              >
-                <span className="admin-stat-icon">✓</span>
-                <div>
-                  <small>Mục đã xác nhận</small>
-                  <strong>{confirmedOrders.length}</strong>
-                  <span>Chuyến đi đã lên lịch</span>
-                </div>
-              </article>
-
-              <article
-                className={`admin-stat-card cancelled ${overviewFilter === 'cancelled' ? 'active-filter' : ''}`}
-                onClick={() => setOverviewFilter('cancelled')}
-                title="Bấm để xem mục đơn đã hủy"
-              >
-                <span className="admin-stat-icon">✕</span>
-                <div>
-                  <small>Mục đã hủy</small>
-                  <strong>{cancelledOrders.length}</strong>
-                  <span>Đơn đã hủy bỏ</span>
-                </div>
-              </article>
-
-              <article className="admin-stat-card revenue">
-                <span className="admin-stat-icon">↗</span>
-                <div>
-                  <small>Doanh thu xác nhận</small>
-                  <strong>{vnd(confirmedRevenue)}</strong>
-                  <span>Từ các đơn đã xác nhận</span>
-                </div>
-              </article>
+                <div className="order-bottom"><strong>{vnd(order.total)}</strong><div><button disabled={order.status === 'confirmed'} onClick={() => void changeStatus(order, 'confirmed')}>Xác nhận</button><button disabled={order.status === 'cancelled'} onClick={() => void changeStatus(order, 'cancelled')}>Hủy đơn</button></div></div>
+              </article>)}
             </div>
-
-            <div className="admin-overview-filters">
-              <button
-                type="button"
-                className={`overview-filter-btn ${overviewFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setOverviewFilter('all')}
-              >
-                Tất cả các mục <b>{orders.length}</b>
-              </button>
-              <button
-                type="button"
-                className={`overview-filter-btn pending ${overviewFilter === 'pending' ? 'active' : ''}`}
-                onClick={() => setOverviewFilter('pending')}
-              >
-                Chờ xác nhận <b>{pendingOrders.length}</b>
-              </button>
-              <button
-                type="button"
-                className={`overview-filter-btn confirmed ${overviewFilter === 'confirmed' ? 'active' : ''}`}
-                onClick={() => setOverviewFilter('confirmed')}
-              >
-                ✓ Mục đã xác nhận <b>{confirmedOrders.length}</b>
-              </button>
-              <button
-                type="button"
-                className={`overview-filter-btn cancelled ${overviewFilter === 'cancelled' ? 'active' : ''}`}
-                onClick={() => setOverviewFilter('cancelled')}
-              >
-                ✕ Mục đã hủy <b>{cancelledOrders.length}</b>
-              </button>
-            </div>
-
-            {/* HIỂN THỊ THEO BỘ LỌC HOẶC TẤT CẢ CÁC MỤC */}
-            {overviewFilter === 'confirmed' && (
-              <section className="overview-section-box confirmed-box">
-                <div className="overview-box-header">
-                  <div>
-                    <span className="eyebrow">DANH SÁCH CHI TIẾT</span>
-                    <h3>✓ Mục đơn đã xác nhận</h3>
-                  </div>
-                  <span className="overview-box-badge confirmed">{confirmedOrders.length} đơn</span>
-                </div>
-                {confirmedOrders.length === 0 ? (
-                  <div className="admin-empty">Chưa có đơn đặt chỗ nào được xác nhận.</div>
-                ) : (
-                  <div className="admin-recent-list">
-                    {confirmedOrders.map((order) => (
-                      <article className="admin-recent-row" key={order.id}>
-                        <span className="admin-recent-avatar status-confirmed">✓</span>
-                        <div className="admin-recent-customer">
-                          <strong>{order.customer_name}</strong>
-                          <small>{order.order_number} · {order.items || 'Chuyến đi'} · SĐT: {order.phone}</small>
-                        </div>
-                        <time>{order.departure_date ? `Khởi hành: ${order.departure_date}` : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(new Date(order.created_at))}</time>
-                        <span className={`payment-status payment-${order.payment_status}`}>
-                          <i aria-hidden="true" />
-                          {order.payment_status === 'paid' ? 'Đã TT · Demo' : 'Chưa TT'}
-                        </span>
-                        <span className="status status-confirmed">Đã xác nhận</span>
-                        <strong className="admin-recent-total">{vnd(order.total)}</strong>
-                        <div className="admin-row-actions">
-                          <button className="row-action-btn cancel" onClick={() => void changeStatus(order, 'cancelled')}>Hủy đơn</button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {overviewFilter === 'cancelled' && (
-              <section className="overview-section-box cancelled-box">
-                <div className="overview-box-header">
-                  <div>
-                    <span className="eyebrow">DANH SÁCH CHI TIẾT</span>
-                    <h3>✕ Mục đơn đã hủy</h3>
-                  </div>
-                  <span className="overview-box-badge cancelled">{cancelledOrders.length} đơn</span>
-                </div>
-                {cancelledOrders.length === 0 ? (
-                  <div className="admin-empty">Không có đơn đặt chỗ nào bị hủy.</div>
-                ) : (
-                  <div className="admin-recent-list">
-                    {cancelledOrders.map((order) => (
-                      <article className="admin-recent-row" key={order.id}>
-                        <span className="admin-recent-avatar status-cancelled">✕</span>
-                        <div className="admin-recent-customer">
-                          <strong>{order.customer_name}</strong>
-                          <small>{order.order_number} · {order.items || 'Chuyến đi'} · SĐT: {order.phone}</small>
-                        </div>
-                        <time>{order.departure_date ? `Khởi hành: ${order.departure_date}` : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(new Date(order.created_at))}</time>
-                        <span className={`payment-status payment-${order.payment_status}`}>
-                          <i aria-hidden="true" />
-                          {order.payment_status === 'paid' ? 'Đã TT · Demo' : 'Chưa TT'}
-                        </span>
-                        <span className="status status-cancelled">Đã hủy</span>
-                        <strong className="admin-recent-total">{vnd(order.total)}</strong>
-                        <div className="admin-row-actions">
-                          <button className="row-action-btn restore" onClick={() => void changeStatus(order, 'confirmed')}>Khôi phục / Xác nhận</button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {overviewFilter === 'pending' && (
-              <section className="overview-section-box pending-box">
-                <div className="overview-box-header">
-                  <div>
-                    <span className="eyebrow">DANH SÁCH CẦN DUYỆT</span>
-                    <h3>◷ Mục đơn chờ xác nhận</h3>
-                  </div>
-                  <span className="overview-box-badge pending">{pendingOrders.length} đơn</span>
-                </div>
-                {pendingOrders.length === 0 ? (
-                  <div className="admin-empty">Hiện không có đơn nào đang chờ xác nhận.</div>
-                ) : (
-                  <div className="admin-recent-list">
-                    {pendingOrders.map((order) => (
-                      <article className="admin-recent-row" key={order.id}>
-                        <span className="admin-recent-avatar status-pending">◷</span>
-                        <div className="admin-recent-customer">
-                          <strong>{order.customer_name}</strong>
-                          <small>{order.order_number} · {order.items || 'Chuyến đi'} · SĐT: {order.phone}</small>
-                        </div>
-                        <time>{order.departure_date ? `Khởi hành: ${order.departure_date}` : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(new Date(order.created_at))}</time>
-                        <span className={`payment-status payment-${order.payment_status}`}>
-                          <i aria-hidden="true" />
-                          {order.payment_status === 'paid' ? 'Đã TT · Demo' : 'Chưa TT'}
-                        </span>
-                        <span className="status status-pending">Chờ xác nhận</span>
-                        <strong className="admin-recent-total">{vnd(order.total)}</strong>
-                        <div className="admin-row-actions">
-                          <button className="row-action-btn confirm" onClick={() => void changeStatus(order, 'confirmed')}>Xác nhận</button>
-                          <button className="row-action-btn cancel" onClick={() => void changeStatus(order, 'cancelled')}>Hủy đơn</button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {overviewFilter === 'all' && (
-              <>
-                {pendingOrders.length > 0 && (
-                  <section className="overview-section-box pending-box" style={{ marginBottom: '20px' }}>
-                    <div className="overview-box-header">
-                      <div>
-                        <span className="eyebrow">CẦN XỬ LÝ NGAY</span>
-                        <h3>◷ Đơn chờ xác nhận mới</h3>
-                      </div>
-                      <span className="overview-box-badge pending">{pendingOrders.length} đơn</span>
-                    </div>
-                    <div className="admin-recent-list">
-                      {pendingOrders.map((order) => (
-                        <article className="admin-recent-row" key={order.id}>
-                          <span className="admin-recent-avatar status-pending">◷</span>
-                          <div className="admin-recent-customer">
-                            <strong>{order.customer_name}</strong>
-                            <small>{order.order_number} · {order.items || 'Chuyến đi'} · SĐT: {order.phone}</small>
-                          </div>
-                          <time>{order.departure_date ? `Khởi hành: ${order.departure_date}` : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(new Date(order.created_at))}</time>
-                          <span className={`payment-status payment-${order.payment_status}`}>
-                            <i aria-hidden="true" />
-                            {order.payment_status === 'paid' ? 'Đã TT · Demo' : 'Chưa TT'}
-                          </span>
-                          <span className="status status-pending">Chờ xác nhận</span>
-                          <strong className="admin-recent-total">{vnd(order.total)}</strong>
-                          <div className="admin-row-actions">
-                            <button className="row-action-btn confirm" onClick={() => void changeStatus(order, 'confirmed')}>Xác nhận</button>
-                            <button className="row-action-btn cancel" onClick={() => void changeStatus(order, 'cancelled')}>Hủy đơn</button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                <div className="overview-sections-grid">
-                  {/* MỤC ĐÃ XÁC NHẬN */}
-                  <section className="overview-section-box confirmed-box">
-                    <div className="overview-box-header">
-                      <div>
-                        <span className="eyebrow">HOÀN TẤT ĐẶT LỊCH</span>
-                        <h3>✓ Mục đã xác nhận</h3>
-                      </div>
-                      <span className="overview-box-badge confirmed">{confirmedOrders.length} đơn</span>
-                    </div>
-                    {confirmedOrders.length === 0 ? (
-                      <div className="admin-empty">Chưa có đơn nào đã xác nhận.</div>
-                    ) : (
-                      <div className="admin-recent-list">
-                        {confirmedOrders.slice(0, 6).map((order) => (
-                          <article className="admin-recent-row" key={order.id}>
-                            <span className="admin-recent-avatar status-confirmed">✓</span>
-                            <div className="admin-recent-customer">
-                              <strong>{order.customer_name}</strong>
-                              <small>{order.order_number} · {order.items || 'Chuyến đi'}</small>
-                            </div>
-                            <time>{order.departure_date || new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(new Date(order.created_at))}</time>
-                            <span className="status status-confirmed">Đã xác nhận</span>
-                            <strong className="admin-recent-total">{vnd(order.total)}</strong>
-                            <div className="admin-row-actions">
-                              <button className="row-action-btn cancel" onClick={() => void changeStatus(order, 'cancelled')}>Hủy</button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-
-                  {/* MỤC ĐÃ HỦY */}
-                  <section className="overview-section-box cancelled-box">
-                    <div className="overview-box-header">
-                      <div>
-                        <span className="eyebrow">ĐÃ HỦY BỎ</span>
-                        <h3>✕ Mục đã hủy</h3>
-                      </div>
-                      <span className="overview-box-badge cancelled">{cancelledOrders.length} đơn</span>
-                    </div>
-                    {cancelledOrders.length === 0 ? (
-                      <div className="admin-empty">Không có đơn nào bị hủy.</div>
-                    ) : (
-                      <div className="admin-recent-list">
-                        {cancelledOrders.slice(0, 6).map((order) => (
-                          <article className="admin-recent-row" key={order.id}>
-                            <span className="admin-recent-avatar status-cancelled">✕</span>
-                            <div className="admin-recent-customer">
-                              <strong>{order.customer_name}</strong>
-                              <small>{order.order_number} · {order.items || 'Chuyến đi'}</small>
-                            </div>
-                            <time>{order.departure_date || new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(new Date(order.created_at))}</time>
-                            <span className="status status-cancelled">Đã hủy</span>
-                            <strong className="admin-recent-total">{vnd(order.total)}</strong>
-                            <div className="admin-row-actions">
-                              <button className="row-action-btn restore" onClick={() => void changeStatus(order, 'confirmed')}>Khôi phục</button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                </div>
-              </>
-            )}
-          </section> : tab === 'orders' ? <div className="admin-orders">
-            {orders.length === 0 && <div className="admin-empty">Chưa có yêu cầu đặt chỗ nào.</div>}
-            {orders.map((order) => <article className="admin-order" key={order.id}>
-              <div className="order-top"><strong>{order.order_number}</strong><span className={`status status-${order.status}`}>{order.status === 'pending' ? 'Chờ xác nhận' : order.status === 'confirmed' ? 'Đã xác nhận' : 'Đã hủy'}</span></div>
-              <h3>{order.customer_name}</h3><p>{order.email} · {order.phone}</p><p>{order.items || 'Chuyến đi'} · Khởi hành {order.departure_date}</p>
-              <div className="order-payment">
-                <span className="order-payment-label">Thanh toán</span>
-                <span className={`payment-status payment-${order.payment_status}`}>
-                  <i aria-hidden="true" />
-                  {order.payment_status === 'paid' ? 'Đã thanh toán · Demo' : 'Chưa thanh toán'}
-                </span>
+          </div> : tab === 'confirmed' ? <div className="admin-orders-tab">
+            <div className="admin-page-heading">
+              <div>
+                <span className="eyebrow">ĐIỀU HÀNH</span>
+                <h2>Đơn đã xác nhận</h2>
+                <p>Danh sách các chuyến đi đã được lên lịch thành công ({confirmedOrders.length} đơn).</p>
               </div>
-              <div className="order-bottom"><strong>{vnd(order.total)}</strong><div><button disabled={order.status === 'confirmed'} onClick={() => void changeStatus(order, 'confirmed')}>Xác nhận</button><button disabled={order.status === 'cancelled'} onClick={() => void changeStatus(order, 'cancelled')}>Hủy đơn</button></div></div>
-            </article>)}
+              <strong style={{ color: 'var(--forest)', fontSize: '16px' }}>Doanh thu: {vnd(confirmedRevenue)}</strong>
+            </div>
+            <div className="admin-orders">
+              {confirmedOrders.length === 0 && <div className="admin-empty">Chưa có đơn đặt chỗ nào được xác nhận.</div>}
+              {confirmedOrders.map((order) => <article className="admin-order" key={order.id}>
+                <div className="order-top"><strong>{order.order_number}</strong><span className="status status-confirmed">Đã xác nhận</span></div>
+                <h3>{order.customer_name}</h3><p>{order.email} · {order.phone}</p><p>{order.items || 'Chuyến đi'} · Khởi hành {order.departure_date}</p>
+                <div className="order-payment">
+                  <span className="order-payment-label">Thanh toán</span>
+                  <span className={`payment-status payment-${order.payment_status}`}>
+                    <i aria-hidden="true" />
+                    {order.payment_status === 'paid' ? 'Đã thanh toán · Demo' : 'Chưa thanh toán'}
+                  </span>
+                </div>
+                <div className="order-bottom"><strong>{vnd(order.total)}</strong><div><button onClick={() => void changeStatus(order, 'cancelled')}>Hủy đơn</button></div></div>
+              </article>)}
+            </div>
+          </div> : tab === 'cancelled' ? <div className="admin-orders-tab">
+            <div className="admin-page-heading">
+              <div>
+                <span className="eyebrow">ĐIỀU HÀNH</span>
+                <h2>Đơn đã hủy</h2>
+                <p>Danh sách các đơn đặt chỗ đã bị hủy bỏ ({cancelledOrders.length} đơn).</p>
+              </div>
+            </div>
+            <div className="admin-orders">
+              {cancelledOrders.length === 0 && <div className="admin-empty">Không có đơn đặt chỗ nào bị hủy.</div>}
+              {cancelledOrders.map((order) => <article className="admin-order" key={order.id}>
+                <div className="order-top"><strong>{order.order_number}</strong><span className="status status-cancelled">Đã hủy</span></div>
+                <h3>{order.customer_name}</h3><p>{order.email} · {order.phone}</p><p>{order.items || 'Chuyến đi'} · Khởi hành {order.departure_date}</p>
+                <div className="order-payment">
+                  <span className="order-payment-label">Thanh toán</span>
+                  <span className={`payment-status payment-${order.payment_status}`}>
+                    <i aria-hidden="true" />
+                    {order.payment_status === 'paid' ? 'Đã thanh toán · Demo' : 'Chưa thanh toán'}
+                  </span>
+                </div>
+                <div className="order-bottom"><strong>{vnd(order.total)}</strong><div><button onClick={() => void changeStatus(order, 'confirmed')}>Khôi phục / Xác nhận</button></div></div>
+              </article>)}
+            </div>
           </div> : <div className="admin-tour-management">
             <form className="tour-editor" onSubmit={save}>
               <div className="editor-heading"><div><span className="eyebrow">{editingId === null ? 'THÊM VÀO BẢN ĐỒ' : 'CHỈNH SỬA HÀNH TRÌNH'}</span><h3>{editingId === null ? 'Tạo trải nghiệm mới' : 'Cập nhật trải nghiệm'}</h3></div>{editingId !== null && <button className="clear-cart" type="button" onClick={() => { setDraft(blankTour); setEditingId(null) }}>Hủy sửa</button>}</div>
