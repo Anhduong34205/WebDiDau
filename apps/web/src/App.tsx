@@ -1,6 +1,7 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from 'react'
 import { api, vnd, type Cart, type OrderLookupResult, type Tour } from './api'
 import AdminPanel from './AdminPanel'
+import AiChatWidget from './AiChatWidget'
 
 const emptyCart: Cart = { items: [], total: 0, count: 0 }
 const dateInAWeek = () => {
@@ -435,6 +436,11 @@ export default function App() {
         api.tours({ q: submittedSearch, category, sort, maxPrice }).then(setTours).catch((reason: Error) => setError(reason.message))
         api.categories().then(setCategories).catch((reason: Error) => setError(reason.message))
       }} />}
+
+      <AiChatWidget
+        allTours={tours}
+        onAddToCart={(tourId) => run(api.add(tourId), 'Đã thêm vào chuyến đi của bạn')}
+      />
     </>
   )
 }

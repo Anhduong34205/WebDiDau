@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type { Context, MiddlewareHandler } from 'hono'
 
-type Env = { Bindings: { DB: D1Database; CART: KVNamespace; ADMIN_TOKEN?: string } }
+type Env = { Bindings: { DB: D1Database; CART: KVNamespace; AI?: any; ADMIN_TOKEN?: string } }
 type Line = { tourId: number; qty: number }
 type Tour = {
   id: number
@@ -159,7 +159,7 @@ app.put('/cart/items/:id', async (c) => {
   const tourId = Number(c.req.param('id'))
   const body = await readJson<{ qty?: number }>(c)
   if (!Number.isSafeInteger(tourId) || !body || !Number.isSafeInteger(body.qty) ||
-      (body.qty! < 0 || body.qty! > 10)) {
+    (body.qty! < 0 || body.qty! > 10)) {
     return c.json({ error: 'Số lượng không hợp lệ (tối đa 10 khách mỗi trải nghiệm).' }, 400)
   }
   const lines = await readLines(c, key)
@@ -188,10 +188,10 @@ app.post('/orders', async (c) => {
     paymentDemo?: boolean
   }>(c)
   if (!body || !body.name?.trim() || body.name.trim().length > 120 ||
-      !body.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) ||
-      !body.phone?.trim() || body.phone.trim().length > 30 ||
-      !body.departureDate || !/^\d{4}-\d{2}-\d{2}$/.test(body.departureDate) ||
-      (body.paymentDemo !== undefined && typeof body.paymentDemo !== 'boolean')) {
+    !body.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) ||
+    !body.phone?.trim() || body.phone.trim().length > 30 ||
+    !body.departureDate || !/^\d{4}-\d{2}-\d{2}$/.test(body.departureDate) ||
+    (body.paymentDemo !== undefined && typeof body.paymentDemo !== 'boolean')) {
     return c.json({ error: 'Vui lòng kiểm tra thông tin liên hệ, ngày khởi hành và lựa chọn thanh toán.' }, 400)
   }
   const departure = new Date(`${body.departureDate}T00:00:00.000Z`)
@@ -231,7 +231,7 @@ app.post('/orders/lookup', async (c) => {
   const lookupType = body?.lookupType
   const value = body?.value?.trim() ?? ''
   if (!value || value.length > 254 ||
-      !['orderNumber', 'email', 'phone'].includes(lookupType ?? '')) {
+    !['orderNumber', 'email', 'phone'].includes(lookupType ?? '')) {
     return c.json({ error: 'Chọn mã đơn, email hoặc số điện thoại và nhập thông tin tra cứu.' }, 400)
   }
 
@@ -310,6 +310,205 @@ app.post('/newsletter', async (c) => {
     throw error
   }
   return c.json({ ok: true }, 201)
+})
+
+const parseBudgetFromQuery = (query: string): number | null => {
+  const match = query.match(/(?:dưới|tầm|khoảng|ngân sách|tối đa|dưới mức|chừng)\s*([\d,.]+)\s*(triệu|tr|k|nghìn|đ|vnd)?/i)
+  if (match) {
+    const num = parseFloat(match[1].replace(',', '.'))
+    if (!Number.isFinite(num)) return null
+    const unit = match[2]?.toLowerCase()
+    if (unit === 'triệu' || unit === 'tr') return num * 1_000_000
+    if (unit === 'k' || unit === 'nghìn') return num * 1_000
+    if (num < 50) return num * 1_000_000
+    return num
+  }
+  return null
+}
+
+const generateSmartFallbackReply = (query: string, tours: Tour[]): string => {
+  const q = query.toLowerCase()
+  const budget = parseBudgetFromQuery(q)
+
+  const unsupported = ['thái lan', 'singapore', 'hàn quốc', 'nhật bản', 'châu âu', 'mỹ', 'pháp', 'úc', 'bali', 'bangkok', 'cà mau', 'an giang', 'vũng tàu']
+  for (const place of unsupported) {
+    if (q.includes(place)) {
+      return `Hiện tại Đi Đâu tập trung tuyển chọn các hành trình trải nghiệm bản địa đặc sắc tại các vùng núi phía Bắc, miền Trung, Tây Nguyên và biển đảo Việt Nam nên chưa có tour đi ${place}. Tuy nhiên, nếu bạn yêu thích thiên nhiên và khám phá, Đi Đâu có những hành trình tuyệt vời rất đáng thử như [TOUR:1] hoặc [TOUR:6]!`
+    }
+  }
+
+  let candidates = tours.filter((t) => t.active === 1)
+  if (budget) {
+    const withBudget = candidates.filter((t) => t.price <= budget)
+    if (withBudget.length > 0) candidates = withBudget
+  }
+
+  const locations = [
+    'hà giang', 'hạ long', 'hội an', 'sa pa', 'sapa', 'ninh bình', 'phú quốc', 'huế', 'đà lạt',
+    'cao bằng', 'quy nhơn', 'cần thơ', 'côn đảo', 'lý sơn', 'phú yên', 'nha trang', 'mai châu',
+    'pù luông', 'bạch mã', 'kon tum', 'ba bể', 'cúc phương', 'tà xùa', 'hà nội', 'mỹ sơn',
+  ]
+  const matchedLoc = locations.find((loc) => q.includes(loc))
+  if (matchedLoc) {
+    const byLoc = candidates.filter((t) =>
+      t.location.toLowerCase().includes(matchedLoc) ||
+      t.title.toLowerCase().includes(matchedLoc) ||
+      (matchedLoc === 'sapa' && t.location.toLowerCase().includes('lào cai'))
+    )
+    if (byLoc.length > 0) candidates = byLoc
+  } else if (q.includes('biển') || q.includes('đảo') || q.includes('lặn')) {
+    const bySea = candidates.filter((t) => t.category === 'Biển đảo' || t.title.toLowerCase().includes('biển') || t.highlights.toLowerCase().includes('san hô'))
+    if (bySea.length > 0) candidates = bySea
+  } else if (q.includes('săn mây') || q.includes('leo núi') || q.includes('trekking') || q.includes('núi') || q.includes('phiêu lưu')) {
+    const byAdv = candidates.filter((t) => t.category === 'Phiêu lưu' || t.summary.toLowerCase().includes('mây') || t.highlights.toLowerCase().includes('săn mây'))
+    if (byAdv.length > 0) candidates = byAdv
+  } else if (q.includes('nghỉ dưỡng') || q.includes('thư giãn') || q.includes('resort') || q.includes('an yên')) {
+    const byRetreat = candidates.filter((t) => t.category === 'Nghỉ dưỡng')
+    if (byRetreat.length > 0) candidates = byRetreat
+  } else if (q.includes('văn hóa') || q.includes('lịch sử') || q.includes('phố cổ') || q.includes('ẩm thực')) {
+    const byCulture = candidates.filter((t) => t.category === 'Văn hóa')
+    if (byCulture.length > 0) candidates = byCulture
+  }
+
+  const selected = candidates.slice(0, 2)
+  if (selected.length === 0) {
+    return 'Dạ Đi Đâu có rất nhiều chuyến đi thiên nhiên, văn hóa và biển đảo đặc sắc. Bạn có thể tham khảo hành trình [TOUR:1] hoặc [TOUR:3] nhé!'
+  }
+
+  const intro = budget
+    ? 'Dưới đây là hành trình phù hợp với ngân sách của bạn:'
+    : 'Dạ, để bạn cảm nhận trọn vẹn vẻ đẹp bản địa, Đi Đâu gợi ý cho bạn hành trình:'
+
+  const list = selected.map((t) =>
+    `• [TOUR:${t.id}] **${t.title}** (${t.location} · ${t.duration} · ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(t.price)}): ${t.summary}`
+  ).join('\n\n')
+
+  return `${intro}\n\n${list}\n\nBạn có thể nhấn nút "+ Thêm vào chuyến đi" ngay dưới thẻ tour để giữ lịch trước nhé!`
+}
+
+app.post('/chat', async (c) => {
+  const body = await readJson<{ messages?: Array<{ role?: string; content?: string }> }>(c)
+  if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
+    return c.json({ error: 'Vui lòng nhập câu hỏi hoặc yêu cầu tư vấn.' }, 400)
+  }
+
+  const sanitizedMessages = body.messages
+    .filter((m): m is { role: 'user' | 'assistant'; content: string } =>
+      Boolean(m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    )
+    .map((m) => ({ role: m.role, content: m.content.trim().slice(0, 500) }))
+    .filter((m) => m.content.length > 0)
+
+  if (sanitizedMessages.length === 0) {
+    return c.json({ error: 'Nội dung câu hỏi không hợp lệ.' }, 400)
+  }
+
+  const latestUser = [...sanitizedMessages].reverse().find((m) => m.role === 'user')
+  const userQuery = latestUser ? latestUser.content : ''
+
+  const clientIp = c.req.header('cf-connecting-ip')
+  if (clientIp) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(clientIp))
+    const ipHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+    const bucket = Math.floor(Date.now() / (10 * 60 * 1000))
+    const rateLimitKey = `chat-rate:${ipHash}:${bucket}`
+    const attempts = Number(await c.env.CART.get(rateLimitKey) ?? '0')
+    if (attempts >= 40) {
+      return c.json({ error: 'Bạn đã hỏi khá nhiều lần. Hãy đợi một chút để Đi Đâu AI nghỉ ngơi nhé.' }, 429)
+    }
+    await c.env.CART.put(rateLimitKey, String(attempts + 1), { expirationTtl: 10 * 60 })
+  }
+
+  const revision = await c.env.CART.get('tours:revision') ?? '0'
+  const cacheKey = `tours:chat_catalog:${revision}`
+  let allTours = await c.env.CART.get<Tour[]>(cacheKey, 'json')
+  if (!allTours) {
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM tours WHERE active = 1 ORDER BY featured DESC, rating DESC'
+    ).all<Tour>()
+    allTours = results
+    await c.env.CART.put(cacheKey, JSON.stringify(allTours), { expirationTtl: 60 * 10 })
+  }
+
+  let reply = ''
+  const toursSummary = allTours.map((t) =>
+    `[TOUR:${t.id}] "${t.title}" | Địa điểm: ${t.location} | Thể loại: ${t.category} | Thời lượng: ${t.duration} | Giá: ${t.price} VNĐ | Điểm nổi bật: ${t.highlights} | Bao gồm: ${t.included} | Tóm tắt: ${t.summary}`
+  ).join('\n')
+
+  const systemPrompt = `Bạn là Trợ lý Cố vấn Hành trình của nền tảng du lịch "Đi Đâu" (didau.vn).
+Phương châm: "Đi chậm hơn. Nhớ lâu hơn."
+Phong cách: Thân tình, ấm áp, văn minh, ngắn gọn, giàu cảm hứng trải nghiệm bản địa Việt Nam.
+
+DANH SÁCH TOÀN BỘ CÁC TOUR CÓ THẬT TRÊN WEBSITE ĐI ĐÂU:
+${toursSummary}
+
+QUY TẮC BẮT BUỘC (TUÂN THỦ 100%):
+1. BẠN CHỈ ĐƯỢC GỢI Ý các tour có trong danh sách trên. TUYỆT ĐỐI KHÔNG tự bịa tour, không gợi ý tour đi nước ngoài hoặc các địa điểm Đi Đâu chưa có.
+2. Khi giới thiệu bất kỳ tour nào, BẮT BUỘC phải viết mã [TOUR:id] ngay sau tên tour (ví dụ: Chinh phục vòng cung Hà Giang [TOUR:1]).
+3. Nếu người dùng hỏi điểm đến mà Đi Đâu chưa có (ví dụ: Cà Mau, tour nước ngoài, Thái Lan, châu Âu...), hãy lịch sự trả lời rằng Đi Đâu hiện chưa có hành trình tại địa điểm đó, sau đó gợi ý 1-2 hành trình tương tự hiện có trên website.
+4. Lắng nghe kỹ yêu cầu về ngân sách, số ngày đi và phong cách (nghỉ dưỡng, văn hóa, phiêu lưu, săn mây...) để gợi ý từ 1 đến 3 tour phù hợp nhất.
+5. Trả lời bằng tiếng Việt tự nhiên, súc tích, dễ đọc.`
+
+  if (c.env.AI && typeof c.env.AI.run === 'function') {
+    try {
+      const model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+      console.log('>>> Calling Workers AI with model:', model)
+      const aiResponse = await c.env.AI.run(model, {
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...sanitizedMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+        ],
+        max_tokens: 600,
+        temperature: 0.4,
+      }) as { response?: string }
+      console.log('>>> Workers AI raw response:', JSON.stringify(aiResponse))
+      const rawChoices = (aiResponse as any)?.choices?.[0]?.message
+      reply = rawChoices?.content?.trim() ||
+              rawChoices?.reasoning_content?.trim() ||
+              (aiResponse as any)?.response?.trim() ||
+              (aiResponse as any)?.text?.trim() ||
+              ''
+    } catch (err) {
+      console.error('>>> Cloudflare Workers AI execution error:', err)
+    }
+  }
+
+  if (!reply) {
+    reply = generateSmartFallbackReply(userQuery, allTours)
+  }
+
+  const suggestedTourIds: number[] = []
+  const matches = reply.matchAll(/\[TOUR:(\d+)\]/g)
+  for (const match of matches) {
+    const id = Number(match[1])
+    if (!suggestedTourIds.includes(id) && allTours.some((t) => t.id === id)) {
+      suggestedTourIds.push(id)
+    }
+  }
+
+  if (suggestedTourIds.length === 0) {
+    const lowerQ = userQuery.toLowerCase()
+    const matched = allTours.find((t) =>
+      lowerQ.includes(t.location.toLowerCase()) || lowerQ.includes(t.title.toLowerCase())
+    )
+    if (matched) suggestedTourIds.push(matched.id)
+  }
+
+  const suggestedTours = allTours.filter((t) => suggestedTourIds.includes(t.id))
+  const cleanReply = reply.replace(/\[TOUR:(\d+)\]/g, (_match, id, offset, fullStr) => {
+    const t = allTours.find((tour) => tour.id === Number(id))
+    if (!t) return ''
+    const prevChars = fullStr.slice(Math.max(0, offset - 100), offset)
+    const nextChars = fullStr.slice(offset + _match.length, offset + _match.length + 100)
+    if (prevChars.includes(t.title) || nextChars.includes(t.title)) return ''
+    return `"${t.title}"`
+  }).replace(/  +/g, ' ').trim()
+
+  return c.json({
+    reply: cleanReply,
+    suggestedTourIds,
+    suggestedTours,
+  })
 })
 
 app.use('/admin/*', requireAdmin)

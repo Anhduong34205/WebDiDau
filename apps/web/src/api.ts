@@ -38,6 +38,20 @@ export type OrderLookupResult = Pick<
   'order_number' | 'departure_date' | 'total' | 'status' | 'payment_status' | 'items'
 >
 
+export type ChatResponse = {
+  reply: string
+  suggestedTourIds: number[]
+  suggestedTours: Tour[]
+}
+
+export type ChatMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  suggestedTours?: Tour[]
+  timestamp?: number
+}
+
 const cartId = (() => {
   try {
     let id = localStorage.getItem('journey-cart-id')
@@ -96,6 +110,11 @@ export const api = {
     }),
   subscribe: (email: string) =>
     req<{ ok: boolean }>('/newsletter', { method: 'POST', body: JSON.stringify({ email }) }),
+  chat: (messages: { role: 'user' | 'assistant'; content: string }[]) =>
+    req<ChatResponse>('/chat', {
+      method: 'POST',
+      body: JSON.stringify({ messages }),
+    }),
   adminTours: (token: string) => req<Tour[]>('/admin/tours', {}, token),
   adminOrders: (token: string) => req<Order[]>('/admin/orders', {}, token),
   createTour: (token: string, tour: Omit<Tour, 'id'>) =>
