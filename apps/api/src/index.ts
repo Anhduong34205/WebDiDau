@@ -336,6 +336,80 @@ const parseBudgetFromQuery = (query: string): number | null => {
 const formatVND = (price: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
 
+type SeasonInfo = {
+  season: 'spring' | 'summer' | 'autumn' | 'winter'
+  label: string
+  month?: number
+  isCurrent?: boolean
+}
+
+const parseSeasonFromQuery = (query: string): SeasonInfo | null => {
+  const q = query.toLowerCase()
+
+  // 1. Nhận diện mùa cụ thể
+  if (/(?:mùa xuân|du xuân|đầu xuân|dịp tết|tết nguyên đán|lễ hội đầu năm|đầu năm)/i.test(q)) {
+    return { season: 'spring', label: 'mùa xuân (khoảng tháng 1 - tháng 3)' }
+  }
+  if (/(?:mùa hè|nghỉ hè|tránh nóng|nắng nóng|tắm biển|du lịch hè)/i.test(q)) {
+    return { season: 'summer', label: 'mùa hè (khoảng tháng 4 - tháng 8)' }
+  }
+  if (/(?:mùa thu|mùa lúa chín|mùa lúa|mùa vàng|lúa chín|cỏ lau|mùa nước nổi)/i.test(q)) {
+    return { season: 'autumn', label: 'mùa thu - mùa lúa chín & cỏ lau (khoảng tháng 9 - tháng 11)' }
+  }
+  if (/(?:mùa đông|mùa rét|gió lạnh|săn mây|hoa dã quỳ|tam giác mạch|dã quỳ)/i.test(q)) {
+    return { season: 'winter', label: 'mùa đông - săn mây & hoa dã quỳ (khoảng tháng 11 - tháng 1)' }
+  }
+
+  // 2. Nhận diện theo tháng cụ thể (tháng 1 - tháng 12)
+  const monthMatch = q.match(/tháng\s*([1-9]|1[0-2])\b/i)
+  if (monthMatch) {
+    const month = parseInt(monthMatch[1], 10)
+    if (month >= 1 && month <= 3) return { season: 'spring', month, label: `tháng ${month} (tiết trời mùa xuân ấm áp)` }
+    if (month >= 4 && month <= 8) return { season: 'summer', month, label: `tháng ${month} (tiết trời mùa hè biển đảo xanh mát & tránh nóng)` }
+    if (month >= 9 && month <= 10) return { season: 'autumn', month, label: `tháng ${month} (mùa thu lúa chín vàng rực & mùa nước nổi)` }
+    return { season: 'winter', month, label: `tháng ${month} (tiết trời chớm đông, mùa săn mây & hoa dã quỳ)` }
+  }
+
+  // 3. Nhận diện khi khách hỏi về thời điểm hiện tại ("mùa này", "bây giờ", "dịp này", "thời điểm này")
+  if (/(?:mùa này|bây giờ|dịp này|thời điểm này|thời gian này|hiện tại|lúc này)/i.test(q)) {
+    const now = new Date()
+    const currentMonth = ((now.getUTCMonth() + 1 + (now.getUTCHours() + 7 >= 24 ? 1 : 0)) % 12) || 12
+    if (currentMonth >= 1 && currentMonth <= 3) return { season: 'spring', month: currentMonth, label: `thời điểm tháng ${currentMonth} (tiết trời mùa xuân)`, isCurrent: true }
+    if (currentMonth >= 4 && currentMonth <= 8) return { season: 'summer', month: currentMonth, label: `thời điểm tháng ${currentMonth} (tiết trời mùa hè)`, isCurrent: true }
+    if (currentMonth >= 9 && currentMonth <= 10) return { season: 'autumn', month: currentMonth, label: `thời điểm tháng ${currentMonth} (mùa thu lúa chín)`, isCurrent: true }
+    return { season: 'winter', month: currentMonth, label: `thời điểm tháng ${currentMonth} (đầu đông săn mây & ngắm hoa)`, isCurrent: true }
+  }
+
+  return null
+}
+
+const getToursBySeason = (season: 'spring' | 'summer' | 'autumn' | 'winter', tourList: Tour[]): Tour[] => {
+  let targetSlugs: string[] = []
+  let extraFilter: (t: Tour) => boolean = () => false
+
+  if (season === 'spring') {
+    targetSlugs = ['moc-chau-tea-hills', 'bac-ninh-quan-ho', 'ninh-binh-river', 'tay-bac-legend-5d4n', 'sapa-cloud-hunting']
+    extraFilter = (t) => t.summary.toLowerCase().includes('hoa mận') || t.highlights.toLowerCase().includes('chùa')
+  } else if (season === 'summer') {
+    targetSlugs = ['lan-ha-bay-cat-ba', 'nam-du-blue-islands', 'phu-quoc-blue', 'con-dao-blue', 'dalat-pine-escape', 'ha-long-sunset', 'quy-nhon-coast', 'mang-den-mist']
+    extraFilter = (t) => t.category === 'Biển đảo' || t.title.toLowerCase().includes('biển') || t.summary.toLowerCase().includes('rừng thông')
+  } else if (season === 'autumn') {
+    targetSlugs = ['mu-cang-chai-harvest', 'binh-lieu-reed-mountain', 'an-giang-tra-su', 'dong-thap-tram-chim', 'can-tho-mekong', 'cao-bang-ban-gioc', 'sapa-cloud-hunting']
+    extraFilter = (t) => t.summary.toLowerCase().includes('lúa') || t.summary.toLowerCase().includes('cỏ lau') || t.summary.toLowerCase().includes('nước nổi')
+  } else if (season === 'winter') {
+    targetSlugs = ['ha-giang-loop', 'gia-lai-bien-ho', 'sapa-cloud-hunting', 'quan-ba-twin-mountains', 'dalat-pine-escape', 'tay-nguyen-great']
+    extraFilter = (t) => t.summary.toLowerCase().includes('mây') || t.highlights.toLowerCase().includes('dã quỳ') || t.highlights.toLowerCase().includes('núi lửa')
+  }
+
+  const matchedTarget: Tour[] = []
+  for (const slug of targetSlugs) {
+    const t = tourList.find((item) => item.slug === slug)
+    if (t) matchedTarget.push(t)
+  }
+  const remaining = tourList.filter((t) => !targetSlugs.includes(t.slug) && extraFilter(t))
+  return [...matchedTarget, ...remaining]
+}
+
 const findDirectTourMatch = (query: string, tours: Tour[]): Tour | null => {
   const q = query.toLowerCase()
   const sorted = [...tours].sort((a, b) => b.title.length - a.title.length)
@@ -437,7 +511,31 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     }
   }
 
-  // ƯU TIÊN SỐ 3: Nhận diện và đính chính nhầm lẫn địa lý (Luật cứng 15: nhẹ nhàng, không bịa kiến thức ngoài)
+  // ƯU TIÊN SỐ 3: KHÁCH HỎI THEO MÙA / THỜI ĐIỂM TRONG NĂM (SEASON AWARENESS)
+  const seasonInfo = parseSeasonFromQuery(q)
+  if (seasonInfo && !directMatch) {
+    let seasonTours = getToursBySeason(seasonInfo.season, activeTours)
+    if (isAskingNorth) {
+      seasonTours = seasonTours.filter((t) => northLocations.some((loc) => t.location.toLowerCase().includes(loc)))
+    }
+    if (budget) {
+      seasonTours = seasonTours.filter((t) => t.price <= budget)
+    }
+
+    if (seasonTours.length > 0) {
+      const picks = seasonTours.slice(0, 3)
+      let reply = `Vào ${seasonInfo.label}${budget ? ' với mức ngân sách khoảng ' + formatVND(budget) : ''}, Đi Đâu có những hành trình đang vào mùa đẹp và phù hợp nhất để bạn trải nghiệm:\n`
+      picks.forEach((t) => {
+        reply += `\n- ${t.title} [TOUR:${t.id}] tại ${t.location} (${t.duration}): Giá ${formatVND(t.price)}/khách. Điểm nổi bật: ${t.highlights}. ${t.summary}`
+      })
+      reply += `\n\nBạn quan tâm đến hành trình nào hơn hoặc dự định khởi hành vào thời điểm nào để mình hỗ trợ tư vấn chu đáo nhất nhé!`
+      return reply
+    } else if (budget) {
+      return `Vào ${seasonInfo.label} với mức ngân sách tối đa ${formatVND(budget)}/khách, hiện tại Đi Đâu chưa có hành trình nào phù hợp trong danh mục đang khai thác bạn nhé. Bạn có thể cân nhắc nâng ngân sách hoặc chia sẻ thêm nhu cầu để mình hỗ trợ tốt nhất!`
+    }
+  }
+
+  // ƯU TIÊN SỐ 4: Nhận diện và đính chính nhầm lẫn địa lý (Luật cứng 15: nhẹ nhàng, không bịa kiến thức ngoài)
   if (q.includes('mộc châu') && (q.includes('hà giang') || q.includes('ở đâu') || q.includes('thuộc tỉnh'))) {
     const mocChauTour = activeTours.find((t) => t.slug === 'moc-chau-tea-hills') || activeTours.find((t) => t.title.toLowerCase().includes('mộc châu'))
     const hgTour = activeTours.find((t) => t.slug === 'ha-giang-loop') || activeTours.find((t) => t.title.toLowerCase().includes('hà giang'))
@@ -1343,6 +1441,48 @@ Hãy nói:
 Đây là câu trả lời ĐÚNG.
 
 Không được cố trả lời để làm hài lòng khách.
+
+==================================================
+LUẬT CỨNG SỐ 24: NHẬN DIỆN MÙA & THỜI ĐIỂM DU LỊCH (SEASON AWARENESS)
+==================================================
+
+Khi khách hỏi về mùa, tháng, thời điểm đi du lịch ("mùa này", "bây giờ", "thời điểm này", "tháng X nên đi đâu"):
+
+1. BẮT BUỘC KHỚP VỚI CÁC TOUR CÓ THẬT THEO 4 MÙA TẠI ĐI ĐÂU:
+- MÙA XUÂN (Tháng 1 - Tháng 3 / Dịp Tết / Du xuân):
+  Ưu tiên các tour hoa xuân Tây Bắc và lễ hội chùa cổ:
+  + Mùa hoa mận trắng và Đồi chè trái tim Mộc Châu [TOUR:id] (hoa mận nở trắng thung lũng Nà Ka)
+  + Một ngày về xứ Kinh Bắc nghe câu Quan họ cổ [TOUR:id] (chùa Dâu, chùa Bút Tháp, nghe hát Quan họ)
+  + Trôi giữa non nước Tràng An [TOUR:id] (sông nước Tràng An, Cố đô Hoa Lư)
+
+- MÙA HÈ (Tháng 4 - Tháng 8 / Nghỉ hè / Tránh nóng):
+  Ưu tiên các tour biển đảo xanh mát hoặc cao nguyên thông reo tránh nóng:
+  + Chèo kayak vịnh Lan Hạ và Khám phá đảo Cát Bà [TOUR:id]
+  + Thiên đường biển hoang sơ Quần đảo Nam Du [TOUR:id]
+  + Một ngày lặn biển Nam đảo Phú Quốc [TOUR:id] / Biển xanh và dấu xưa Côn Đảo [TOUR:id]
+  + Trốn lên rừng thông Đà Lạt [TOUR:id] / Chạm vào sương sớm Măng Đen [TOUR:id]
+
+- MÙA THU (Tháng 9 - Tháng 11 / Mùa lúa chín / Cỏ lau / Mùa nước nổi):
+  Ưu tiên các tour kiệt tác mùa vàng ruộng bậc thang và sông nước phương Nam:
+  + Mùa vàng trên bậc thang mây Mù Cang Chải [TOUR:id] (đồi Mâm Xôi, đồi Móng Ngựa lúa chín vàng)
+  + Chinh phục sống lưng khủng long mùa cỏ lau Bình Liêu [TOUR:id] (triền đồi cỏ lau trắng muốt)
+  + Lướt xuồng len lỏi Rừng tràm Trà Sư mùa bèo xanh [TOUR:id] / Ngắm chim về tổ ở Tràm Chim [TOUR:id] (mùa nước nổi miền Tây)
+  + Theo dòng thác Bản Giốc ở Cao Bằng [TOUR:id] / Thuyền qua hồ Ba Bể [TOUR:id]
+
+- MÙA ĐÔNG (Tháng 11 - Tháng 1 / Săn mây / Hoa dã quỳ & Tam giác mạch):
+  Ưu tiên các cung đèo săn mây và hoa cao nguyên:
+  + Chinh phục vòng cung Hà Giang [TOUR:id] (chạm mây Mã Pí Lèng, sông Nho Quế)
+  + Ngắm Mắt ngọc Pleiku Biển Hồ Tơ Nưng và Núi lửa Chư Đăng Ya [TOUR:id] (mùa hoa dã quỳ vàng rực trên miệng núi lửa đã tắt)
+  + Săn mây và trekking bản Tả Van [TOUR:id]
+  + Một ngày chạm Cổng trời Quản Bạ và Núi Đôi cô tiên [TOUR:id]
+
+2. KHI KHÁCH HỎI "MÙA NÀY / BÂY GIỜ / DỊP NÀY NÊN ĐI ĐÂU":
+- Luôn nắm bắt tháng hiện tại theo thời gian thực (ví dụ thời điểm tháng 11 là tiết trời chớm đông).
+- Tư vấn nhiệt tình và tự nhiên các hành trình đang vào mùa đẹp nhất (ví dụ tháng 11 là mùa săn mây Tây Bắc, mùa cỏ lau Bình Liêu, mùa hoa dã quỳ Tây Nguyên và mùa nước nổi miền Tây).
+
+3. KẾT HỢP VỚI CÁC RÀNG BUỘC KHÁC:
+- Nếu khách vừa hỏi mùa vừa có ngân sách (VD: "mùa hè này có tour biển nào dưới 2 triệu không"):
+  BẮT BUỘC tôn trọng Luật cứng 5 (Ngân sách) và chỉ chọn tour biển thỏa mãn ngân sách.
 
 ==================================================
 QUY TẮC VĂN PHONG
