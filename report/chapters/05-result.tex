@@ -1,0 +1,45 @@
+\chapter{KẾT QUẢ VÀ KIỂM THỬ}
+
+\section{Kết quả triển khai}
+Đồ án đã triển khai các nhóm chức năng:
+\begin{itemize}
+    \item Khám phá, tìm kiếm, lọc, sắp xếp và xem tour.
+    \item Giỏ đặt chỗ, gửi yêu cầu đặt tour và tra cứu đơn.
+    \item Quản trị tour và đơn hàng bằng bearer token.
+    \item Chatbot RAG sử dụng embedding, Vectorize và Workers AI.
+    \item Dữ liệu demo được nạp từ các tệp seed; chốt số lượng tour từ dữ liệu hiện hành trước khi nộp báo cáo.
+\end{itemize}
+
+Ứng dụng production được triển khai tại địa chỉ:\\
+\texttt{https://didau-travel.anhduong34205.workers.dev}
+
+\section{Cách kiểm thử}
+Nên kiểm thử ở bốn mức:
+\begin{enumerate}
+    \item Typecheck hai workspace API và web.
+    \item Build frontend bằng Vite.
+    \item Smoke test `GET /api/tours` và `POST /api/chat`.
+    \item Kiểm thử guardrail ngân sách, tour trực tiếp và địa điểm không có trong catalog.
+\end{enumerate}
+
+Các câu test minh họa:
+\begin{itemize}
+    \item “Tour biển đảo dưới 3 triệu”.
+    \item “Tìm tour nghỉ dưỡng yên tĩnh cuối tuần”.
+    \item Câu hỏi chứa tên tour cụ thể.
+    \item Câu hỏi về địa điểm không xuất hiện trong catalog.
+\end{itemize}
+
+\section{Tiêu chí đánh giá}
+Một câu trả lời chat đạt yêu cầu khi:
+\begin{itemize}
+    \item HTTP trả về 200 đối với request hợp lệ.
+    \item Các `suggestedTourIds` đều trỏ tới tour active.
+    \item `suggestedTours` khớp danh sách ID.
+    \item Tour gợi ý không vượt ngân sách đã trích xuất.
+    \item Không bịa địa điểm hoặc dịch vụ ngoài dữ liệu closed-world.
+    \item Câu trả lời không vượt giới hạn context của mô hình.
+\end{itemize}
+
+\section{Kết quả cần ghi theo môi trường thực nghiệm}
+Các thông tin tốc độ, số request, độ chính xác retrieval hoặc tỷ lệ câu trả lời đúng phải lấy từ log thực nghiệm và ghi ngày đo. Không điền số liệu nếu chưa thực hiện thí nghiệm có thể tái lập.

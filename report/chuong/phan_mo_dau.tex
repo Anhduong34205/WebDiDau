@@ -1,0 +1,36 @@
+
+\addcontentsline{toc}{chapter}{PHẦN MỞ ĐẦU}
+\vspace*{15pt}
+\begin{center}
+\large{\textbf{PHẦN MỞ ĐẦU}}
+\end{center}
+
+\section*{Lý do chọn đề tài}
+Du lịch địa phương có nhu cầu cung cấp thông tin hành trình, tìm kiếm theo địa điểm và ngân sách, quản lý giỏ đặt chỗ và hỗ trợ tư vấn. Đồ án xây dựng hệ thống \emph{Đi Đâu}, kết hợp website du lịch và chatbot Retrieval-Augmented Generation để tư vấn dựa trên dữ liệu tour thực tế của hệ thống.
+
+Các chatbot dựa hoàn toàn trên mô hình ngôn ngữ có thể tự sinh thông tin không tồn tại trong catalog. Do đó, đồ án áp dụng truy xuất vector trước khi tạo câu trả lời nhằm giới hạn ngữ cảnh trong dữ liệu tour có trong cơ sở dữ liệu.
+
+\section*{Mục tiêu nghiên cứu}
+Mục tiêu tổng quát là xây dựng nền tảng khám phá và đặt tour du lịch địa phương có chatbot tư vấn dữ liệu đóng.
+
+Các mục tiêu cụ thể gồm:
+\begin{itemize}
+    \item Xây dựng giao diện tìm kiếm, xem chi tiết, giỏ đặt chỗ và tra cứu đơn.
+    \item Xây dựng API backend bằng Hono trên Cloudflare Workers.
+    \item Lưu tour, đơn hàng và thanh toán demo bằng Cloudflare D1.
+    \item Sử dụng Cloudflare KV cho giỏ hàng, cache và giới hạn tần suất.
+    \item Tạo embedding bằng \texttt{@cf/baai/bge-m3} và truy xuất top-k bằng Cloudflare Vectorize.
+    \item Áp dụng guardrail ngân sách, tour trực tiếp và dữ liệu closed-world.
+    \item Triển khai và kiểm thử hệ thống trên Cloudflare.
+\end{itemize}
+
+\section*{Đối tượng và phạm vi nghiên cứu}
+Đối tượng nghiên cứu là website du lịch, API đặt tour, dữ liệu có cấu trúc, vector embedding và truy xuất ngữ nghĩa.
+
+Phạm vi dữ liệu gồm catalog tour được lưu trong D1. Đồ án mô phỏng thanh toán nhưng không thực hiện thu tiền thật. Giỏ hàng và cache được lưu bằng KV. Không triển khai cổng thanh toán thật trong phạm vi đồ án.
+
+\section*{Phương pháp nghiên cứu}
+Đồ án sử dụng phương pháp khảo sát quy trình du lịch, phân tích yêu cầu, thiết kế kiến trúc, triển khai frontend/backend, seed dữ liệu, xây dựng RAG pipeline, kiểm thử API và triển khai Cloudflare.
+
+\section*{Cấu trúc báo cáo}
+Báo cáo gồm phần mở đầu, cơ sở lý thuyết, khảo sát và phân tích hệ thống, thiết kế hệ thống, kết quả và kiểm thử, kết luận, tài liệu tham khảo và nhận xét giảng viên hướng dẫn.

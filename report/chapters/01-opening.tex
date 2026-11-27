@@ -1,0 +1,34 @@
+\addcontentsline{toc}{chapter}{PHẦN MỞ ĐẦU}
+\begin{center}
+\large\textbf{PHẦN MỞ ĐẦU}
+\end{center}
+
+\section*{Lý do chọn đề tài}
+Du lịch địa phương có nhu cầu cung cấp thông tin hành trình, tìm kiếm theo địa điểm và ngân sách, quản lý giỏ đặt chỗ và hỗ trợ tư vấn. Đồ án xây dựng hệ thống \emph{Đi Đâu}, kết hợp website du lịch và chatbot RAG để tư vấn dựa trên dữ liệu tour của chính hệ thống.
+
+Các chatbot dựa hoàn toàn trên mô hình ngôn ngữ có thể tự sinh thông tin không tồn tại trong catalog. Do đó, đề tài áp dụng truy xuất vector trước khi tạo câu trả lời nhằm giới hạn ngữ cảnh trong dữ liệu tour thực tế.
+
+\section*{Mục tiêu nghiên cứu}
+Mục tiêu tổng quát là xây dựng một nền tảng khám phá và đặt tour du lịch địa phương với chatbot tư vấn dữ liệu đóng.
+
+Các mục tiêu cụ thể gồm:
+\begin{itemize}
+    \item Xây dựng giao diện tìm kiếm, xem chi tiết, giỏ đặt chỗ và tra cứu đơn.
+    \item Xây dựng API backend với Hono và Cloudflare Workers.
+    \item Lưu dữ liệu tour, đơn hàng và thanh toán demo bằng Cloudflare D1.
+    \item Sử dụng KV cho giỏ hàng, cache và giới hạn tần suất.
+    \item Nhúng nội dung tour bằng BGE-M3, lưu vector trong Cloudflare Vectorize và truy xuất theo cosine similarity.
+    \item Áp dụng guardrail ngân sách, tour trực tiếp và closed-world để giảm hiện tượng tự sinh dữ liệu.
+    \item Triển khai ứng dụng lên Cloudflare Workers và kiểm thử các luồng chính.
+\end{itemize}
+
+\section*{Đối tượng và phạm vi nghiên cứu}
+Đối tượng nghiên cứu là kiến trúc website du lịch, API đặt tour, dữ liệu đóng, vector embedding và truy xuất ngữ nghĩa.
+
+Phạm vi dữ liệu gồm catalog tour được lưu trong D1. Đồ án mô phỏng thanh toán nhưng không thực hiện thu tiền thật. Giỏ hàng và cache được lưu bằng Cloudflare KV. Không triển khai cổng thanh toán thật hoặc logistics vận chuyển trong phạm vi đề tài.
+
+\section*{Phương pháp nghiên cứu}
+Đồ án sử dụng các bước: khảo sát quy trình du lịch, phân tích yêu cầu, thiết kế kiến trúc, triển khai frontend/backend, seed dữ liệu, xây dựng RAG pipeline, kiểm thử API và triển khai Cloudflare.
+
+\section*{Cấu trúc báo cáo}
+Báo cáo gồm phần mở đầu, cơ sở lý thuyết, khảo sát và phân tích, thiết kế hệ thống, kết quả/kiểm thử, kết luận và tài liệu tham khảo.

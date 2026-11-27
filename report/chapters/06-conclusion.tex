@@ -1,0 +1,24 @@
+\addcontentsline{toc}{chapter}{KẾT LUẬN VÀ KIẾN NGHỊ}
+\begin{center}
+\large\textbf{KẾT LUẬN VÀ KIẾN NGHỊ}
+\end{center}
+
+\section*{Kết quả đạt được}
+Đồ án đã xây dựng website du lịch Đi Đâu với tìm kiếm, giỏ đặt chỗ, đơn hàng, tra cứu đơn, quản trị và chatbot RAG. Backend chạy trên Hono/Cloudflare Workers, dữ liệu đặt tour lưu trong D1, giỏ/cache lưu trong KV và retrieval vector lưu trong Vectorize.
+
+Hệ thống đã triển khai closed-world guardrails nhằm giới hạn câu trả lời trong catalog, kết hợp cosine retrieval và mô hình sinh văn bản. Quy trình reindex cho phép cập nhật vector sau thay đổi tour.
+
+\section*{Hạn chế}
+Thanh toán hiện chỉ mô phỏng demo; chưa tích hợp cổng thanh toán thật. Chưa có bộ test tự động chuyên sâu cho toàn bộ luồng frontend/backend. Chất lượng retrieval phụ thuộc dữ liệu mô tả tour và độ đầy đủ của metadata. Mô hình sinh văn bản có thể vẫn cần guardrail bổ sung cho các truy vấn phức hợp.
+
+\section*{Hướng phát triển}
+Hướng phát triển gồm:
+\begin{itemize}
+    \item Bổ sung test tự động cho API, RAG và UI.
+    \item Thêm lịch sử hội thoại server-side thay cho sessionStorage.
+    \item Theo dõi latency, truy vấn retrieval và tỷ lệ câu trả lời sai.
+    \item Tích hợp thanh toán thật khi có đối tác và quy trình bảo mật.
+    \item Bổ sung đánh giá phản hồi người dùng để cải thiện ranking và prompt.
+    \item Tự động reindex Vectorize sau mọi thay đổi tour.
+    \item Mở rộng schema để lưu chính sách hủy, lịch khởi hành và đánh giá thực.
+\end{itemize}

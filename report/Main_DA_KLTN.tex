@@ -1,0 +1,95 @@
+%% Mẫu ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP ICTU
+\documentclass[12pt,a4paper, reqno, oneside]{reportICTU}
+\usepackage{amsmath,amsxtra,amssymb,latexsym, amscd,amsthm,multirow}
+\usepackage{enumerate}
+\usepackage{graphicx,subfigure,psfrag}
+\usepackage[top=2.0cm, bottom=2.0cm, left=3.0cm, right=2.0cm, headheight=15pt]{geometry}
+\usepackage{indentfirst}
+\usepackage{color}
+\usepackage[utf8]{vietnam}
+\usepackage[mathscr]{eucal}
+\usepackage{amsfonts}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{setspace}
+\usepackage{fancybox}
+\usepackage{boxedminipage}
+\usepackage{makecell}
+\usepackage[displaymath, mathlines]{lineno}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{Thuật toán}
+\renewcommand{\algorithmicrequire}{\textbf{Đầu vào:}}
+\renewcommand{\algorithmicensure}{\textbf{Đầu ra:}}
+\usepackage{caption}
+\captionsetup{margin=10pt,font=small}
+\usepackage{sansmathaccent}
+\pdfmapfile{+sansmathaccent.map}
+\usepackage[unicode]{hyperref}
+\usepackage{titledot}
+\usepackage{fancyhdr}
+\usepackage{mathptmx}
+
+\titlespacing{\chapter}{0pt}{-10pt}{0pt}[0pt]
+\titlename{Chương}
+\def\figpath{Figures/Figures/}
+
+\pagestyle{fancy}
+\rhead{}
+\chead{\thepage}
+\lhead{}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\begin{document}
+\newpage
+\input{bia/bia_chinh}
+\input{bia/bia_phu}
+
+\setlength{\baselineskip}{22truept}
+\pagenumbering{roman}
+{
+\begin{spacing}{1.3}
+\input{chuong/loi_cam_doan}
+\newpage
+\input{chuong/loi_cam_on}
+\newpage
+\input{chuong/tu_viet_tat}
+\newpage
+\tableofcontents
+\newpage
+\addcontentsline{toc}{chapter}{Danh sách bảng}
+\listoftables
+\newpage
+\addcontentsline{toc}{chapter}{Danh sách hình vẽ}
+\listoffigures
+\end{spacing}
+}
+
+\newpage
+\pagenumbering{arabic}
+{
+\input{chuong/phan_mo_dau}
+\newpage
+\input{chuong/chuong_1}
+\input{chuong/chuong_2}
+\input{chuong/chuong_3}
+\input{chuong/chuong_4}
+\newpage
+\input{chuong/ket_luan}
+}
+
+\newpage
+\setlength{\baselineskip}{19truept}
+{
+\renewcommand{\refname}{TÀI LIỆU THAM KHẢO}
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+\bibliography{Tai_lieu_tham_khao/tai_lieu}
+\bibliographystyle{abbrv}
+\newpage
+\input{chuong/nhan_xet_gvhd}
+}
+\end{document}

@@ -1,0 +1,48 @@
+\chapter{THIẾT KẾ HỆ THỐNG}
+
+\section{Thiết kế kiến trúc tổng thể}
+Hệ thống gồm React/Vite frontend, Hono Worker API, D1 database, KV namespace, Workers AI, Vectorize và static assets. Frontend gửi yêu cầu đến `/api/*`; Worker xử lý nghiệp vụ và truy cập binding tương ứng.
+
+\begin{table}[H]
+\centering
+\caption{Các thành phần Cloudflare của hệ thống}
+\label{tab:bindings}
+\begin{tabular}{|l|p{9cm}|}
+\hline
+\textbf{Binding} & \textbf{Vai trò} \\
+\hline
+DB & Lưu tours, orders, order items, payment và newsletter \\
+CART & Lưu giỏ hàng, cache catalog và rate-limit chat \\
+AI & Tạo embedding và sinh phản hồi chatbot \\
+VECTORIZE & Lưu vector tour và truy xuất top-k \\
+ASSETS & Phục vụ frontend build \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Thiết kế dữ liệu}
+Bảng `tours` lưu thông tin catalog gồm mã, slug, tên, địa điểm, thể loại, thời lượng, giá, rating, đánh giá, summary, hình ảnh, highlights, included, featured và active.
+
+Bảng `orders` lưu mã đơn, thông tin khách, ngày khởi hành, tổng tiền và trạng thái. `order_items` lưu chi tiết tour trong đơn. `order_payments` lưu trạng thái thanh toán demo. `newsletter_subscribers` lưu email đăng ký.
+
+\section{Thiết kế API}
+API public bao gồm danh sách tour, danh mục, giỏ hàng, đơn hàng, tra cứu đơn, newsletter và chat. API quản trị yêu cầu bearer `ADMIN_TOKEN` để quản lý tour và đơn hàng.
+
+Luồng chatbot:
+\begin{enumerate}
+    \item Nhận danh sách message và lấy câu hỏi gần nhất.
+    \item Tải catalog active từ D1/KV.
+    \item Nhận diện tour trực tiếp và ngân sách.
+    \item Tạo embedding câu hỏi bằng BGE-M3.
+    \item Truy vấn top-k trong Vectorize.
+    \item Áp dụng budget/direct-tour guardrail.
+    \item Gửi context tour hợp lệ vào LLM.
+    \item Trả `reply`, `suggestedTourIds` và `suggestedTours`.
+\end{enumerate}
+
+Endpoint `POST /api/admin/rag/sync` đọc tour active, tạo embedding cho nội dung tour, xóa vector cũ theo ID và upsert vào index `didau-tours-index`.
+
+\section{Thiết kế giao diện}
+Frontend gồm trang khám phá tour, bộ lọc tìm kiếm, thẻ hành trình, chi tiết tour, giỏ chuyến đi, thanh toán demo, tra cứu đơn, quản trị và widget chatbot nổi.
+
+Widget chat lưu lịch sử phiên bằng `sessionStorage`, hiển thị trạng thái bận, lỗi và thẻ tour gợi ý; người dùng có thể thêm trực tiếp tour gợi ý vào giỏ.

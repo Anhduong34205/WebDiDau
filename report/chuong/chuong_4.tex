@@ -1,0 +1,76 @@
+\setcounter{chapter}{3}
+\setcounter{table}{0}
+\setcounter{figure}{0}
+\chapter{KẾT QUẢ VÀ KIỂM THỬ}
+
+\section{Kết quả triển khai}
+Hệ thống đã triển khai các nhóm chức năng:
+\begin{itemize}
+    \item Khám phá, tìm kiếm, lọc, sắp xếp và xem tour.
+    \item Giỏ đặt chỗ, gửi yêu cầu đặt tour và tra cứu đơn.
+    \item Quản trị tour và đơn hàng bằng bearer token.
+    \item Chatbot RAG sử dụng embedding, Vectorize và Workers AI.
+    \item Triển khai toàn bộ frontend và API lên Cloudflare Workers.
+\end{itemize}
+
+Ứng dụng production được triển khai tại địa chỉ:
+
+\begin{center}
+\texttt{https://didau-travel.anhduong34205.workers.dev}
+\end{center}
+
+\section{Phương pháp kiểm thử}
+Kế hoạch kiểm thử gồm các bước sau:
+\begin{enumerate}
+    \item Chạy typecheck cho workspace API và frontend.
+    \item Build frontend bằng Vite.
+    \item Smoke test endpoint `GET /api/tours`.
+    \item Smoke test endpoint `POST /api/chat`.
+    \item Kiểm thử guardrail ngân sách, tour trực tiếp và địa điểm không có trong catalog.
+    \item Kiểm tra API quản trị bằng `ADMIN_TOKEN` mà không ghi secret vào báo cáo hoặc mã nguồn.
+\end{enumerate}
+
+\section{Các tình huống kiểm thử chatbot}
+Các câu hỏi thử gồm:
+\begin{itemize}
+    \item ``Tour biển đảo dưới 3 triệu''.
+    \item ``Tìm tour nghỉ dưỡng yên tĩnh cuối tuần''.
+    \item Câu hỏi có tên tour cụ thể.
+    \item Câu hỏi về địa điểm không xuất hiện trong catalog.
+\end{itemize}
+
+Tiêu chí đánh giá bao gồm:
+\begin{itemize}
+    \item HTTP 200 đối với request hợp lệ.
+    \item `suggestedTourIds` trỏ tới tour active trong catalog.
+    \item `suggestedTours` khớp danh sách `suggestedTourIds`.
+    \item Tour gợi ý không vượt ngân sách đã trích xuất.
+    \item Không đưa ra địa điểm, dịch vụ hoặc mức giá không có trong dữ liệu closed-world.
+    \item Context đưa vào mô hình nằm trong giới hạn token.
+\end{itemize}
+
+\section{Kết quả đánh giá}
+Các kết quả cụ thể về độ chính xác retrieval, tỷ lệ câu trả lời đúng và thời gian phản hồi phải lấy từ phiên chạy thực nghiệm có thể tái lập. Thông tin này cần ghi ngày đo và cấu hình mô hình sử dụng trước khi nộp báo cáo.
+
+Bảng sau mô tả tiêu chí ghi nhận thay vì tự bịa số đo.
+
+\begin{table}[H]
+\centering
+\caption{Tiêu chí ghi nhận kết quả kiểm thử}
+\label{tab:kiem-thu}
+\begin{tabular}{|p{3.2cm}|p{4.2cm}|p{5.2cm}|}
+\hline
+\textbf{Nội dung kiểm thử} & \textbf{Tiêu chí đạt} & \textbf{Cách ghi nhận} \\
+\hline
+Typecheck và build & Không có lỗi compiler & Log của npm typecheck/build \\
+\hline
+API tours & Trả danh sách tour active & Status HTTP và số record kiểm tra \\
+\hline
+Chat budget & Không gợi ý tour vượt ngân sách & So sánh ID và giá với catalog \\
+\hline
+Chat semantic & Tour phù hợp nhu cầu & Đối chiếu vector retrieval và dữ liệu tour \\
+\hline
+Unknown place & Không bịa địa danh/dịch vụ & Nội dung phản hồi và catalog \\
+\hline
+\end{tabular}
+\end{table}

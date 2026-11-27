@@ -1,0 +1,35 @@
+\setcounter{chapter}{0}
+\setcounter{section}{0}
+\setcounter{table}{0}
+\setcounter{figure}{0}
+%\addcontentsline{toc}{chapter}{CƠ SỞ LÝ THUYẾT}
+\chapter{CƠ SỞ LÝ THUYẾT}
+
+\textit{Chương này trình bày những công nghệ chính sử dụng trong đồ án.}
+
+\section{Tổng quan đề tài}
+Website \emph{Đi Đâu} hỗ trợ khám phá tour du lịch, tìm kiếm theo địa điểm, thể loại và ngân sách, quản lý giỏ đặt chỗ, gửi yêu cầu đặt tour, tra cứu đơn và quản trị catalog.
+
+Điểm đặc trưng của hệ thống là chatbot tư vấn sử dụng Retrieval-Augmented Generation. Hệ thống truy xuất tour liên quan trước khi mô hình ngôn ngữ sinh câu trả lời, từ đó giảm khả năng đưa ra thông tin tour không có trong dữ liệu.
+
+\section{Cơ sở lý thuyết}
+\subsection{Ứng dụng web monorepo}
+Frontend được xây dựng bằng React, Vite và TypeScript. Backend sử dụng Hono chạy trên Cloudflare Workers. Monorepo npm workspace cho phép quản lý hai ứng dụng trong cùng repository.
+
+\subsection{Cloudflare Workers và binding}
+Cloudflare Workers cung cấp runtime không cần quản lý máy chủ truyền thống. Binding cho phép Worker truy cập tài nguyên như D1, KV, Workers AI, Vectorize và static assets.
+
+\subsection{Cloudflare D1 và KV}
+D1 lưu dữ liệu quan hệ cho tour, đơn hàng, đơn vị tour trong đơn và thanh toán demo. KV lưu giỏ hàng theo cart ID, cache catalog và dữ liệu tần suất chat.
+
+\subsection{Embedding và Vectorize}
+Embeddings là vector số biểu diễn ngữ nghĩa của văn bản. Đồ án dùng \texttt{@cf/baai/bge-m3} để tạo embedding tour và câu hỏi, sau đó truy vấn Vectorize bằng cosine similarity để lấy top-k tour liên quan.
+
+\subsection{Retrieval-Augmented Generation}
+RAG là phương pháp cung cấp tài liệu truy xuất cho mô hình ngôn ngữ trước khi sinh câu trả lời~\cite{Lewis2020RAG}. Trong đồ án, catalog active trong D1 là dữ liệu đóng; vector chỉ hỗ trợ truy xuất tour phù hợp.
+
+\section{Các công trình hoặc hệ thống liên quan}
+Các nền tảng đặt tour thương mại thường cung cấp catalog, giỏ hàng, thanh toán và quản trị. Các trợ lý chatbot thương mại thường kết hợp retrieval và prompt guardrail. Hệ thống đồ án kế thừa mô hình catalog--cart--order nhưng tập trung vào closed-world RAG cho chatbot du lịch.
+
+\section{Định hướng giải quyết}
+Giải pháp lựa chọn gồm: React/Vite cho giao diện, Hono cho API, D1/KV cho dữ liệu và Cloudflare AI/Vectorize cho RAG. Data-first guardrail được đặt sau retrieval để loại bỏ tour vượt ngân sách và chỉ gợi ý tour có trong catalog.

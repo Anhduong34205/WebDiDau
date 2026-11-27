@@ -1,0 +1,213 @@
+\setcounter{chapter}{2}
+\setcounter{chapter}{2}
+\setcounter{table}{0}
+\setcounter{figure}{0}
+%\addcontentsline{toc}{chapter}{KHẢO SÁT VÀ PHÂN TÍCH HỆ THỐNG}
+\chapter{THIẾT KẾ HỆ THỐNG}
+
+\section{Thiết kế tổng thể}
+Hệ thống gồm frontend React, Hono Worker API, D1, KV, Workers AI, Vectorize và static assets. Frontend gọi `/api/*`; Worker điều phối truy cập binding tương ứng.
+
+\begin{table}[H]
+\centering
+\caption{Các binding Cloudflare được sử dụng}
+\label{tab:bindings}
+\begin{tabular}{|l|p{9cm}|}
+\hline
+\textbf{Binding} & \textbf{Vai trò} \\
+\hline
+DB & Lưu tour, đơn hàng, sản phẩm trong đơn và thanh toán demo \\
+CART & Lưu giỏ hàng, cache catalog và giới hạn tần suất chat \\
+AI & Tạo embedding và sinh phản hồi chatbot \\
+VECTORIZE & Lưu và truy xuất vector tour \\
+ASSETS & Phục vụ frontend build \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Thiết kế dữ liệu}
+Bảng \texttt{tours} lưu mã, slug, tên, địa điểm, thể loại, thời lượng, giá, rating, hình ảnh, summary, highlights, included, featured và active.
+
+Bảng \texttt{orders} lưu mã đơn, khách hàng, ngày khởi hành, tổng tiền và trạng thái. Bảng \texttt{order\_items} lưu chi tiết tour trong đơn. Bảng \texttt{order\_payments} lưu trạng thái thanh toán demo; bảng \texttt{newsletter\_subscribers} lưu email đăng ký.
+
+\section{Thiết kế chức năng}
+Các chức năng public gồm danh sách tour, danh mục, giỏ hàng, đơn hàng, tra cứu đơn, đăng ký nhận tin và chat. API quản trị yêu cầu bearer `ADMIN_TOKEN` để quản lý tour và đơn hàng.
+
+Luồng chatbot gồm: nhận câu hỏi, tải catalog active, nhận diện tour trực tiếp và ngân sách, tạo embedding câu hỏi, truy vấn top-k Vectorize, lọc guardrail, đưa context hợp lệ vào mô hình và trả phản hồi cùng danh sách tour gợi ý.
+
+\section{Thiết kế use case}
+
+\subsection{Use case tổng quát}
+Sơ đồ use case tổng quát mô tả hai tác nhân chính: Khách và Quản trị viên. Khách thực hiện khám phá tour, đặt tour, tra cứu đơn và tương tác chatbot. Quản trị viên đăng nhập bằng bearer token để quản lý catalog, đơn hàng và reindex Vectorize.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small]
+\draw[thick,rounded corners] (-4.8,-4.8) rectangle (4.8,4.8);
+\node[anchor=north] at (0,4.55) {\bf Hệ thống Đi Đâu};
+
+\node[ellipse,draw,minimum width=3.2cm,minimum height=0.75cm] (explore) at (0,3.15) {Khám phá tour};
+\node[ellipse,draw,minimum width=3.2cm,minimum height=0.75cm] (booking) at (0,1.75) {Đặt tour};
+\node[ellipse,draw,minimum width=3.2cm,minimum height=0.75cm] (lookup) at (0,0.35) {Tra cứu đơn};
+\node[ellipse,draw,minimum width=3.2cm,minimum height=0.75cm] (chat) at (0,-1.05) {Tư vấn bằng chatbot};
+\node[ellipse,draw,minimum width=3.2cm,minimum height=0.75cm] (admin) at (0,-2.45) {Quản trị dữ liệu};
+\node[ellipse,draw,minimum width=3.2cm,minimum height=0.75cm] (reindex) at (0,-3.85) {Reindex Vectorize};
+
+\draw (-7.2,1.1) circle (0.22) node[below=0.35cm]{Khách};
+\draw (-7.2,0.88) -- (-7.2,-0.45);
+\draw (-7.2,0.2) -- (-7.8,-0.7);
+\draw (-7.2,0.2) -- (-6.6,-0.7);
+
+\draw (7.2,-2.1) circle (0.22) node[below=0.35cm]{Quản trị viên};
+\draw (7.2,-2.32) -- (7.2,-3.65);
+\draw (7.2,-3.0) -- (6.6,-3.85);
+\draw (7.2,-3.0) -- (7.8,-3.85);
+
+\draw (-6.98,1.1) -- (-1.6,3.15);
+\draw (-6.98,1.1) -- (-1.6,1.75);
+\draw (-6.98,1.1) -- (-1.6,0.35);
+\draw (-6.98,1.1) -- (-1.6,-1.05);
+\draw (6.98,-2.1) -- (1.6,-2.45);
+\draw (6.98,-2.1) -- (1.6,-3.85);
+\end{tikzpicture}
+\caption{Use case tổng quát của hệ thống Đi Đâu}
+\label{fig:usecase-tongquat}
+\end{figure}
+
+\subsection{Use case khách hàng}
+Use case khách hàng tập trung vào hành trình duyệt catalog, quản lý giỏ và tạo đơn. Tìm kiếm, xem chi tiết và chatbot là các use case hỗ trợ, trong khi thanh toán demo là bước lựa chọn trong use case đặt tour.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small]
+\draw[thick,rounded corners] (-5,-4.6) rectangle (5,4.6);
+\node[anchor=north] at (0,4.35) {\bf Chức năng dành cho khách};
+
+\node[ellipse,draw,minimum width=3.1cm] (search) at (0,3.15) {Tìm/lọc tour};
+\node[ellipse,draw,minimum width=3.1cm] (detail) at (0,1.85) {Xem chi tiết tour};
+\node[ellipse,draw,minimum width=3.1cm] (cart) at (0,0.55) {Quản lý giỏ};
+\node[ellipse,draw,minimum width=3.1cm] (order) at (0,-0.75) {Tạo đơn đặt chỗ};
+\node[ellipse,draw,minimum width=3.1cm] (payment) at (0,-2.05) {Chọn thanh toán demo};
+\node[ellipse,draw,minimum width=3.1cm] (lookup) at (0,-3.35) {Tra cứu đơn};
+
+\draw (-7.1,0.2) circle (0.22) node[below=0.35cm]{Khách};
+\draw (-7.1,-0.02) -- (-7.1,-1.35);
+\draw (-7.1,-0.7) -- (-7.7,-1.55);
+\draw (-7.1,-0.7) -- (-6.5,-1.55);
+
+\draw (-6.88,0.2) -- (-1.55,3.15);
+\draw (-6.88,0.2) -- (-1.55,1.85);
+\draw (-6.88,0.2) -- (-1.55,0.55);
+\draw (-6.88,0.2) -- (-1.55,-0.75);
+\draw (-6.88,0.2) -- (-1.55,-3.35);
+\draw[->,dashed] (detail) -- (search) node[midway,right]{include};
+\draw[->,dashed] (payment) -- (order) node[midway,right]{include};
+\draw[->,dashed] (order) -- (cart) node[midway,right]{include};
+\end{tikzpicture}
+\caption{Use case khách hàng}
+\label{fig:usecase-khachhang}
+\end{figure}
+
+\subsection{Use case quản trị}
+Quản trị viên phải được xác thực bằng bearer ADMIN\_TOKEN trước khi truy cập chức năng quản lý tour, đơn hàng hoặc reindex Vectorize.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small]
+\draw[thick,rounded corners] (-5,-4) rectangle (5,4);
+\node[anchor=north] at (0,3.75) {\bf Chức năng quản trị};
+
+\node[ellipse,draw,minimum width=3.4cm] (auth) at (0,2.8) {Xác thực ADMIN\_TOKEN};
+\node[ellipse,draw,minimum width=3.1cm] (tour) at (0,1.45) {Quản lý tour};
+\node[ellipse,draw,minimum width=3.1cm] (order) at (0,0.1) {Quản lý đơn hàng};
+\node[ellipse,draw,minimum width=3.1cm] (reindex) at (0,-1.25) {Reindex Vectorize};
+\node[ellipse,draw,minimum width=2.8cm] (archive) at (0,-2.6) {Archive tour};
+
+\draw (7.1,-0.8) circle (0.22) node[below=0.35cm]{Quản trị viên};
+\draw (7.1,-1.02) -- (7.1,-2.35);
+\draw (7.1,-1.7) -- (6.5,-2.55);
+\draw (7.1,-1.7) -- (7.7,-2.55);
+
+\draw (6.88,-0.8) -- (1.55,2.8);
+\draw (6.88,-0.8) -- (1.55,1.45);
+\draw (6.88,-0.8) -- (1.55,0.1);
+\draw (6.88,-0.8) -- (1.55,-1.25);
+\draw[->,dashed] (tour) -- (auth) node[midway,right]{include};
+\draw[->,dashed] (order) -- (auth) node[midway,right]{include};
+\draw[->,dashed] (reindex) -- (auth) node[midway,right]{include};
+\draw[->,dashed] (archive) -- (tour) node[midway,right]{extend};
+\end{tikzpicture}
+\caption{Use case quản trị hệ thống}
+\label{fig:usecase-quantri}
+\end{figure}
+
+\subsection{Use case đặt tour}
+Use case đặt tour gồm xác thực giỏ, xác thực dữ liệu khách, tạo đơn D1 và cập nhật trạng thái thanh toán demo.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small]
+\draw[thick,rounded corners] (-5,-4) rectangle (5,4);
+\node[anchor=north] at (0,3.75) {\bf Quy trình đặt tour};
+
+\node[ellipse,draw,minimum width=3.2cm] (cart) at (0,2.65) {Kiểm tra giỏ};
+\node[ellipse,draw,minimum width=3.2cm] (info) at (0,1.35) {Nhập thông tin khách};
+\node[ellipse,draw,minimum width=3.2cm] (validate) at (0,0.05) {Xác thực dữ liệu};
+\node[ellipse,draw,minimum width=3.2cm] (order) at (0,-1.25) {Tạo order/items/payment};
+\node[ellipse,draw,minimum width=3.2cm] (clear) at (0,-2.55) {Xóa cart};
+
+\draw (-7.1,0.1) circle (0.22) node[below=0.35cm]{Khách};
+\draw (-7.1,-0.12) -- (-7.1,-1.45);
+\draw (-7.1,-0.8) -- (-7.7,-1.65);
+\draw (-7.1,-0.8) -- (-6.5,-1.65);
+
+\draw (-6.88,0.1) -- (-1.6,2.65);
+\draw (-6.88,0.1) -- (-1.6,1.35);
+\draw (-6.88,0.1) -- (-1.6,-1.25);
+\draw[->] (cart) -- (info);
+\draw[->] (info) -- (validate);
+\draw[->] (validate) -- (order);
+\draw[->] (order) -- (clear);
+\end{tikzpicture}
+\caption{Use case đặt tour}
+\label{fig:usecase-dattour}
+\end{figure}
+
+\subsection{Use case chatbot RAG}
+Use case chatbot RAG bao gồm nhận câu hỏi, tạo embedding, truy vấn Vectorize, áp dụng guardrail và sinh phản hồi.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small]
+\draw[thick,rounded corners] (-5,-4.2) rectangle (5,4.2);
+\node[anchor=north] at (0,3.95) {\bf Chatbot RAG};
+
+\node[ellipse,draw,minimum width=3.2cm] (question) at (0,3.0) {Nhận câu hỏi};
+\node[ellipse,draw,minimum width=3.2cm] (embed) at (0,1.65) {Tạo embedding};
+\node[ellipse,draw,minimum width=3.2cm] (retrieve) at (0,0.3) {Truy vấn Vectorize};
+\node[ellipse,draw,minimum width=3.2cm] (guard) at (0,-1.05) {Áp dụng guardrail};
+\node[ellipse,draw,minimum width=3.2cm] (llm) at (0,-2.4) {Sinh phản hồi LLM};
+\node[ellipse,draw,minimum width=3.2cm] (cards) at (0,-3.75) {Trả thẻ tour gợi ý};
+
+\draw (-7.1,0.2) circle (0.22) node[below=0.35cm]{Khách};
+\draw (-7.1,-0.02) -- (-7.1,-1.35);
+\draw (-7.1,-0.7) -- (-7.7,-1.55);
+\draw (-7.1,-0.7) -- (-6.5,-1.55);
+
+\draw (-6.88,0.2) -- (-1.6,3.0);
+\draw (-6.88,0.2) -- (-1.6,-3.75);
+\draw[->] (question) -- (embed);
+\draw[->] (embed) -- (retrieve);
+\draw[->] (retrieve) -- (guard);
+\draw[->] (guard) -- (llm);
+\draw[->] (llm) -- (cards);
+\end{tikzpicture}
+\caption{Use case chatbot RAG}
+\label{fig:usecase-rag}
+\end{figure}
+
+\subsection{Quan hệ include và extend}
+Mối quan hệ include biểu thị use case bắt buộc phải thực thi use case con. Chẳng hạn, đặt tour gồm kiểm tra giỏ, xác thực dữ liệu và thanh toán demo. Mối quan hệ extend biểu thị use case mở rộng chỉ xảy ra ở điều kiện nhất định, ví dụ archive tour mở rộng chức năng quản lý tour.
+
+\section{Thiết kế giao diện hoặc mô hình thực nghiệm}
+Giao diện gồm trang khám phá, bộ lọc, thẻ tour, chi tiết tour, giỏ chuyến đi, thanh toán demo, tra cứu đơn, quản trị và widget chatbot nổi. Widget lưu lịch sử phiên bằng sessionStorage, hiển thị trạng thái bận/lỗi và cho phép thêm tour gợi ý vào giỏ.

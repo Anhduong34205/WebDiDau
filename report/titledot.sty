@@ -1,0 +1,74 @@
+% titledot.sty nhằm mục đích chấm các số tiêu đề và trong mục lục
+% Nguyễn Hữu Điển
+%ĐHKHTN, ĐHQG HN
+% 10/7/2009
+% Phiên bản 1.1 đã sửa đổi 23/12/2009
+% Phiên bản 1.2 đã sửa đổi 20/1/2011
+%Gói lệnh đòi hỏi titlesec.sty và titletoc.sty
+
+\ProvidesPackage{titledot}[2009/07/10 v1.0 Vietnamese section]
+
+\RequirePackage{ifthen}
+\RequirePackage{titlesec}
+\RequirePackage{titletoc}
+
+\newboolean{nosubsection}
+
+\titlelabel{\thetitle\; }%\quad
+\contentsmargin{0pt}
+
+\newcommand\@tenchuong{Chương}
+\newcommand{\titlename}[1]{\renewcommand{\@tenchuong}{ #1}}
+
+\titlecontents{chapter}[0.4pc]
+  {\addvspace{3pt}\bfseries}
+ {\@tenchuong \ \thecontentslabel\;\ }
+%  {\contentslabel[\hfill\@tenchuong \ \thecontentslabel.\ ]{4pc}}
+  {}
+  {\dotfill\quad\thecontentspage}
+
+
+\titlecontents{section}[1.8pc]
+%  {\addvspace{2pt}}
+{\normalsize}
+ {\thecontentslabel\;\ }
+ % {\contentslabel[\thecontentslabel.]{1.8pc}}\bfseries
+  {}
+  {\dotfill\quad\thecontentspage}
+
+\titlecontents{subsection}[2.4pc]
+{\normalsize}
+ {\thecontentslabel\;\ }
+%   {\contentslabel[\thecontentslabel.]{2.4pc}}
+  {}
+  {\dotfill\quad\thecontentspage}
+
+\titlecontents{subsubsection}[3.4pc]
+{\normalsize}
+   {\thecontentslabel\;\  }
+  {}
+  {\dotfill\quad\thecontentspage}
+
+
+\DeclareOption{nosubsection}{
+\titlecontents*{subsection}[1.8pc]
+{\normalsize}
+  {\thecontentslabel\; }
+  {}
+  {, \thecontentspage}
+  [.---][\;]
+
+\titlecontents*{subsubsection}[1.8pc]
+{\normalsize}
+  {\thecontentslabel\; }
+  {}
+  {, \thecontentspage}
+  [.---][\;]
+}
+
+
+%%%%%%%%%%%
+
+\ProcessOptions
+
+\endinput

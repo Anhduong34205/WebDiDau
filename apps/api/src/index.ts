@@ -337,6 +337,13 @@ const parseBudgetFromQuery = (query: string): number | null => {
     .replace(/(\d+)\s*củ\s*(\d+)/gi, '$1.$2 triệu')
     .replace(/(\d+)\s*củ/gi, '$1 triệu')
 
+  const explicitMillion = q.match(/([\d,.]+)\s*(triệu|tr)\b/i)
+  if (explicitMillion) {
+    const num = parseFloat(explicitMillion[1].replace(',', '.'))
+    if (!Number.isFinite(num)) return null
+    return Math.round(num * 1_000_000)
+  }
+
   const match = q.match(/(?:dưới|tầm|khoảng|ngân sách|tối đa|dưới mức|chừng|có|chỉ có|tài chính|tầm giá|mức|tầm khoảng|còn|với|tầm)\s*([\d,.]+)\s*(triệu|tr|k|nghìn|đ|vnd|đồng)?/i) ||
                 q.match(/([\d,.]+)\s*(triệu|tr|k|nghìn|đ|vnd|đồng)?\s*(?:đổ lại|trở xuống|quay đầu|trở lại|thôi)/i)
 

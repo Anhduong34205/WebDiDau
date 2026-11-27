@@ -1,0 +1,55 @@
+\setcounter{chapter}{1}
+\setcounter{chapter}{1}
+\setcounter{table}{0}
+\setcounter{figure}{0}
+%\addcontentsline{toc}{chapter}{KHẢO SÁT VÀ PHÂN TÍCH HỆ THỐNG}
+\chapter{KHẢO SÁT VÀ PHÂN TÍCH HỆ THỐNG}
+
+
+\section{Khảo sát hiện trạng}
+Quy trình du lịch được khảo sát gồm khám phá tour, xem thông tin chi tiết, thêm tour vào giỏ, điền thông tin đặt chỗ, gửi yêu cầu và tra cứu đơn. Hệ thống cần phục vụ người dùng cuối và quản trị viên.
+
+Người dùng có thể tìm kiếm theo từ khóa, địa điểm, thể loại, ngân sách và cách sắp xếp. Chatbot hỗ trợ tư vấn bằng ngôn ngữ tự nhiên thay cho tìm kiếm thủ công hoàn toàn.
+
+\section{Phân tích yêu cầu}
+\subsection{Yêu cầu chức năng}
+\begin{itemize}
+    \item Xem danh sách và chi tiết tour đang active.
+    \item Tìm kiếm, lọc theo thể loại, ngân sách và sắp xếp kết quả.
+    \item Quản lý giỏ đặt chỗ theo cart ID.
+    \item Gửi đơn đặt chỗ và mô phỏng thanh toán.
+    \item Tra cứu đơn theo mã đơn, email hoặc số điện thoại.
+    \item Đăng ký nhận bản tin.
+    \item Quản lý tour và đơn hàng qua API quản trị.
+    \item Tư vấn tour bằng chatbot RAG và gợi ý thẻ tour.
+\end{itemize}
+
+\subsection{Yêu cầu phi chức năng}
+Hệ thống cần kiểm tra dữ liệu đầu vào, giới hạn chat theo IP, tách dữ liệu active khỏi dữ liệu lưu trữ, không tiết lộ `ADMIN_TOKEN`, không bịa tour hoặc dịch vụ ngoài catalog và xử lý lỗi khi AI, Vectorize hoặc D1 không khả dụng.
+
+\section{Phương pháp thực hiện}
+Đồ án sử dụng monorepo npm workspace. Frontend dùng React/TypeScript/Vite; backend dùng Hono/Cloudflare Workers; dữ liệu dùng D1 và KV; RAG dùng Workers AI và Vectorize.
+
+Quy trình phát triển gồm phân tích, thiết kế, seed dữ liệu, triển khai API/UI, reindex vector, typecheck, build và smoke test production.
+
+\section{Kế hoạch thực hiện}
+\begin{table}[H]
+\centering
+\caption{Kế hoạch thực hiện đồ án}
+\label{tab:ke-hoach}
+\begin{tabular}{|c|p{4.5cm}|p{6.5cm}|}
+\hline
+\textbf{STT} & \textbf{Công việc} & \textbf{Kết quả} \\
+\hline
+1 & Khảo sát và thu thập yêu cầu & Danh sách yêu cầu chức năng, phi chức năng \\
+\hline
+2 & Phân tích và thiết kế & Kiến trúc, schema D1, API contract \\
+\hline
+3 & Triển khai frontend & Trang khám phá, giỏ hàng, đơn hàng và chatbot \\
+\hline
+4 & Triển khai backend/RAG & Hono API, embedding, Vectorize và guardrail \\
+\hline
+5 & Kiểm thử và triển khai & Typecheck, build, deploy và smoke test \\
+\hline
+\end{tabular}
+\end{table}

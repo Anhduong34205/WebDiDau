@@ -1,0 +1,39 @@
+\chapter{CƠ SỞ LÝ THUYẾT}
+
+\section{Kiến trúc ứng dụng web}
+React được sử dụng để xây dựng giao diện người dùng, Vite hỗ trợ phát triển và đóng gói frontend, còn Hono cung cấp router nhẹ chạy trên Cloudflare Workers. Kiến trúc client--server giúp frontend chỉ giao tiếp qua API `/api/*`, trong khi Worker truy cập D1, KV, Workers AI, Vectorize và static assets.
+
+\section{Cloudflare Workers và binding}
+Cloudflare Workers chạy mã biên biên giới gần người dùng. Worker sử dụng binding để truy cập tài nguyên Cloudflare mà không quản lý máy chủ truyền thống.
+
+Dự án sử dụng:
+\begin{itemize}
+    \item `DB` cho Cloudflare D1.
+    \item `CART` cho Cloudflare KV.
+    \item `AI` cho Workers AI.
+    \item `VECTORIZE` cho Vectorize index.
+    \item `ASSETS` cho frontend build.
+\end{itemize}
+
+\section{Retrieval-Augmented Generation}
+RAG là phương pháp cung cấp tài liệu truy xuất cho mô hình ngôn ngữ trước khi sinh câu trả lời~\cite{lewis2020rag}. Với chatbot du lịch, quy trình gồm:
+
+\begin{enumerate}
+    \item Chuẩn hóa câu hỏi người dùng.
+    \item Tạo embedding cho câu hỏi bằng BGE-M3.
+    \item Truy vấn top-k vector trong Vectorize.
+    \item Ánh xạ vector match về tour trong D1/catalog.
+    \item Áp dụng guardrail ngân sách và dữ liệu đóng.
+    \item Đưa catalog ngắn gọn vào prompt để sinh phản hồi.
+\end{enumerate}
+
+Embedding biểu diễn văn bản dưới dạng vector số. Vectorize sử dụng cosine similarity để xếp hạng mức tương đồng.
+
+\section{Cloudflare AI và mô hình sinh văn bản}
+Workers AI cung cấp embedding và inference. Dự án sử dụng `@cf/baai/bge-m3` để tạo vector tour/câu hỏi và `@cf/meta/llama-3.3-70b-instruct-fp8-fast` để sinh câu trả lời sau truy xuất.
+
+\section{Các hệ thống liên quan}
+Các nền tảng đặt tour thương mại thường cung cấp catalog, giỏ hàng, thanh toán và quản trị. Các trợ lý chatbot thương mại thường sử dụng retrieval và prompt guardrails. Hệ thống của đồ án khác ở việc đóng mã nguồn và dữ liệu trong closed-world catalog, tránh giả định thêm tour hoặc dịch vụ không có trong D1.
+
+\section{Định hướng giải quyết}
+Đồ án kết hợp catalog dạng có cấu trúc và vector retrieval. Dữ liệu chính là source of truth; vector chỉ dùng để tìm tour liên quan. Mọi tour gợi ý cuối cùng phải khớp với bản ghi active trong D1.
