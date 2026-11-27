@@ -1820,12 +1820,14 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
 
     // LUẬT CỨNG SỐ 5 (Code Guardrail): Nếu có ngân sách và không phải hỏi đích danh tour
     if (extractedBudget !== null && extractedBudget > 0) {
+      const isSoft = /(?:khoảng|tầm|cỡ|chừng|khoảng chừng)/i.test(userQuery)
+      const budgetMax = isSoft ? extractedBudget * 1.15 : extractedBudget
       suggestedTourIds = suggestedTourIds.filter((id) => {
         const tour = allTours.find((t) => t.id === id)
-        return tour ? tour.price <= extractedBudget : false
+        return tour ? tour.price <= budgetMax : false
       })
       if (suggestedTourIds.length === 0) {
-        const withinBudget = allTours.filter((t) => t.price <= extractedBudget)
+        const withinBudget = allTours.filter((t) => t.price <= budgetMax)
         if (withinBudget.length > 0) {
           suggestedTourIds.push(withinBudget[0].id)
         }
