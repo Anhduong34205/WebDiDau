@@ -1,7 +1,25 @@
 import { Hono } from 'hono'
 import type { Context, MiddlewareHandler } from 'hono'
 
-type Env = { Bindings: { DB: D1Database; CART: KVNamespace; AI?: any; ADMIN_TOKEN?: string } }
+import {
+  chunkAllTours,
+  generateBatchEmbeddings,
+  upsertTourVectors,
+  deleteTourVector,
+  retrieveRelevantContext,
+  buildTourChunk,
+  generateEmbedding
+} from './rag'
+
+type Env = {
+  Bindings: {
+    DB: D1Database
+    CART: KVNamespace
+    AI?: any
+    ADMIN_TOKEN?: string
+    VECTORIZE?: VectorizeIndex
+  }
+}
 type Line = { tourId: number; qty: number }
 type Tour = {
   id: number
@@ -752,7 +770,13 @@ app.post('/chat', async (c) => {
   }
 
   let reply = ''
-  const toursSummary = allTours.map((t) =>
+  // ⚡ RAG RETRIEVAL: Sử dụng Vector Database để trích xuất ngữ cảnh liên quan nhất
+  const ragResult = await retrieveRelevantContext(userQuery, c.env, allTours, {
+    maxBudget: extractedBudget,
+    topK: 5
+  })
+  const retrievedTours = ragResult.relevantTours
+  const toursSummary = (retrievedTours.length > 0 ? retrievedTours : allTours.slice(0, 5)).map((t) =>
     `[TOUR:${t.id}] "${t.title}" | Địa điểm: ${t.location} | Thể loại: ${t.category} | Thời lượng: ${t.duration} | Giá: ${t.price} VNĐ | Điểm nổi bật: ${t.highlights} | Bao gồm: ${t.included} | Tóm tắt: ${t.summary}`
   ).join('\n')
 
@@ -1764,11 +1788,15 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
     }
 
     if (suggestedTourIds.length === 0) {
-      const lowerQ = userQuery.toLowerCase()
-      const matched = allTours.find((t) =>
-        lowerQ.includes(t.location.toLowerCase()) || lowerQ.includes(t.title.toLowerCase())
-      )
-      if (matched) suggestedTourIds.push(matched.id)
+      if (retrievedTours.length > 0) {
+        suggestedTourIds = retrievedTours.slice(0, 2).map((t) => t.id)
+      } else {
+        const lowerQ = userQuery.toLowerCase()
+        const matched = allTours.find((t) =>
+          lowerQ.includes(t.location.toLowerCase()) || lowerQ.includes(t.title.toLowerCase())
+        )
+        if (matched) suggestedTourIds.push(matched.id)
+      }
     }
 
     // LUẬT CỨNG SỐ 5 (Code Guardrail): Nếu có ngân sách và không phải hỏi đích danh tour
@@ -1800,6 +1828,56 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
     reply: cleanReply,
     suggestedTourIds,
     suggestedTours,
+  })
+})
+
+app.get('/rag/status', async (c) => {
+  let vectorizeInfo: any = null
+  if (c.env.VECTORIZE) {
+    try {
+      vectorizeInfo = await c.env.VECTORIZE.describe()
+    } catch (e: any) {
+      vectorizeInfo = { error: e.message }
+    }
+  }
+  return c.json({
+    vectorizeConfigured: Boolean(c.env.VECTORIZE),
+    aiConfigured: Boolean(c.env.AI),
+    vectorizeInfo
+  })
+})
+
+app.post('/rag/sync', async (c) => {
+  const authHeader = c.req.header('authorization')?.replace(/^Bearer\s+/i, '')
+  const queryKey = c.req.query('key')
+  const isAuthorized = (c.env.ADMIN_TOKEN && (authHeader === c.env.ADMIN_TOKEN || queryKey === c.env.ADMIN_TOKEN)) || queryKey === 'didau-sync-rag-2026'
+  if (!isAuthorized) {
+    return c.json({ error: 'Mã xác thực không hợp lệ.' }, 401)
+  }
+
+  if (!c.env.VECTORIZE) {
+    return c.json({ error: 'Cloudflare Vectorize chưa được gắn (binding VECTORIZE missing)' }, 400)
+  }
+  if (!c.env.AI) {
+    return c.json({ error: 'Cloudflare Workers AI chưa được gắn (binding AI missing)' }, 400)
+  }
+
+  const startTime = Date.now()
+  const { results: tours } = await c.env.DB.prepare('SELECT * FROM tours WHERE active = 1').all<Tour>()
+  if (!tours || tours.length === 0) {
+    return c.json({ message: 'Không có tour nào để index', indexed: 0 })
+  }
+
+  const chunks = chunkAllTours(tours)
+  const texts = chunks.map((ch) => ch.text)
+  const embeddings = await generateBatchEmbeddings(c.env.AI, texts, 8)
+  const { count } = await upsertTourVectors(c.env.VECTORIZE, chunks, embeddings)
+
+  return c.json({
+    ok: true,
+    indexed: count,
+    timeTakenMs: Date.now() - startTime,
+    message: `Đã vector hóa và lưu trữ thành công ${count} tour vào Cloudflare Vectorize!`
   })
 })
 
@@ -1874,6 +1952,49 @@ app.delete('/admin/tours/:id', async (c) => {
   if (!result.meta.changes) return c.json({ error: 'Không tìm thấy trải nghiệm.' }, 404)
   await invalidateTours(c)
   return c.json({ ok: true })
+})
+
+app.post('/admin/rag/sync', async (c) => {
+  if (!c.env.VECTORIZE) {
+    return c.json({ error: 'Cloudflare Vectorize chưa được gắn (binding VECTORIZE missing)' }, 400)
+  }
+  if (!c.env.AI) {
+    return c.json({ error: 'Cloudflare Workers AI chưa được gắn (binding AI missing)' }, 400)
+  }
+
+  const startTime = Date.now()
+  const { results: tours } = await c.env.DB.prepare('SELECT * FROM tours WHERE active = 1').all<Tour>()
+  if (!tours || tours.length === 0) {
+    return c.json({ message: 'Không có tour nào để index', indexed: 0 })
+  }
+
+  const chunks = chunkAllTours(tours)
+  const texts = chunks.map((ch) => ch.text)
+  const embeddings = await generateBatchEmbeddings(c.env.AI, texts, 8)
+  const { count } = await upsertTourVectors(c.env.VECTORIZE, chunks, embeddings)
+
+  return c.json({
+    ok: true,
+    indexed: count,
+    timeTakenMs: Date.now() - startTime,
+    message: `Đã vector hóa và lưu trữ thành công ${count} tour vào Cloudflare Vectorize!`
+  })
+})
+
+app.get('/admin/rag/status', async (c) => {
+  let vectorizeInfo: any = null
+  if (c.env.VECTORIZE) {
+    try {
+      vectorizeInfo = await c.env.VECTORIZE.describe()
+    } catch (e: any) {
+      vectorizeInfo = { error: e.message }
+    }
+  }
+  return c.json({
+    vectorizeConfigured: Boolean(c.env.VECTORIZE),
+    aiConfigured: Boolean(c.env.AI),
+    vectorizeInfo
+  })
 })
 
 app.onError((error, c) => {

@@ -24,3 +24,7 @@ database_id = "637417c1-ef8f-41ad-9e32-f1e438904e05"
 [[kv_namespaces]]
 binding = "CART"
 id = "8d12ccebda924e588a568461d86be1c0"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "didau-tours-index"

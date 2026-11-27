@@ -127,6 +127,10 @@ export const api = {
     req<{ ok: boolean }>(`/admin/orders/${id}`, {
       method: 'PATCH', body: JSON.stringify({ status }),
     }, token),
+  syncRag: (token: string) =>
+    req<{ ok: boolean; indexed: number; message: string; timeTakenMs: number }>('/admin/rag/sync', { method: 'POST' }, token),
+  ragStatus: (token: string) =>
+    req<{ vectorizeConfigured: boolean; aiConfigured: boolean; vectorizeInfo: any }>('/admin/rag/status', {}, token),
 }
 
 export const vnd = (n: number) =>

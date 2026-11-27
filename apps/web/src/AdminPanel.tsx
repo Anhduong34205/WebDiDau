@@ -14,6 +14,21 @@ export default function AdminPanel({ onClose, onChanged }: { onClose: () => void
   const [tours, setTours] = useState<Tour[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [tab, setTab] = useState<'overview' | 'orders' | 'confirmed' | 'cancelled' | 'tours'>('overview')
+  const [syncingRag, setSyncingRag] = useState(false)
+  const [ragMsg, setRagMsg] = useState('')
+
+  const handleSyncRag = async () => {
+    setSyncingRag(true)
+    setRagMsg('Đang vector hóa toàn bộ tour...')
+    try {
+      const res = await api.syncRag(token)
+      setRagMsg(res.message || `Đã đồng bộ ${res.indexed} tour vào Vectorize!`)
+    } catch (err: any) {
+      setRagMsg(`Lỗi: ${err.message}`)
+    } finally {
+      setSyncingRag(false)
+    }
+  }
   const [draft, setDraft] = useState<TourDraft>(blankTour)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -255,7 +270,22 @@ export default function AdminPanel({ onClose, onChanged }: { onClose: () => void
               </div>
               <button className="button-dark full-button" disabled={busy}>{editingId === null ? 'Thêm trải nghiệm' : 'Lưu thay đổi'} <span>↗</span></button>
             </form>
-            <div className="tour-admin-list"><h3>Danh sách trải nghiệm</h3>{tours.map((tour) => <div className="tour-admin-row" key={tour.id}><img src={tour.image} alt="" /><div><strong>{tour.title}</strong><span>{tour.location} · {vnd(tour.price)} {tour.active ? '' : '· Đã ẩn'}</span></div><button onClick={() => edit(tour)}>Sửa</button><button onClick={() => void archive(tour)}>Ẩn</button></div>)}</div>
+            <div className="tour-admin-list">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, padding: '12px 16px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>⚡ Vector Database (RAG)</strong>
+                  <small style={{ color: '#15803d' }}>{ragMsg || 'Hệ thống AI sử dụng mô hình vector cosine để gợi ý tour chính xác.'}</small>
+                </div>
+                <button
+                  type="button"
+                  disabled={syncingRag}
+                  onClick={handleSyncRag}
+                  style={{ padding: '6px 14px', background: '#166534', color: '#fff', border: 'none', borderRadius: 6, cursor: syncingRag ? 'wait' : 'pointer', fontWeight: 600, fontSize: '0.82rem' }}
+                >
+                  {syncingRag ? 'Đang đồng bộ...' : 'Đồng bộ Vector DB'}
+                </button>
+              </div>
+              <h3>Danh sách trải nghiệm</h3>{tours.map((tour) => <div className="tour-admin-row" key={tour.id}><img src={tour.image} alt="" /><div><strong>{tour.title}</strong><span>{tour.location} · {vnd(tour.price)} {tour.active ? '' : '· Đã ẩn'}</span></div><button onClick={() => edit(tour)}>Sửa</button><button onClick={() => void archive(tour)}>Ẩn</button></div>)}</div>
           </div>}
           </div>
         </div>
