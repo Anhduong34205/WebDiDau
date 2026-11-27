@@ -1,0 +1,14 @@
+POST https://f8fb6f6f730b404fb2f273fd789d04df.ingest.cloudflare.com HTTP/1.1
+content-type: application/json
+
+{
+    "id": "nhóm 01",
+    "country":"VN",
+    "device":"ios",
+    "ip":"123.3456.57.234",
+    "time": 1791853920,
+    "meta":{
+        "key":"demo",
+        "value":"100"
+}
+}

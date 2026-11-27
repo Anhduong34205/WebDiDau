@@ -8,7 +8,8 @@ import {
   deleteTourVector,
   retrieveRelevantContext,
   buildTourChunk,
-  generateEmbedding
+  generateEmbedding,
+  querySimilarTours
 } from './rag'
 
 type Env = {
@@ -463,7 +464,7 @@ const findDirectTourMatch = (query: string, tours: Tour[]): Tour | null => {
   }
   return null
 }
-const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?: number | null): string => {
+const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?: number | null, preferredTours?: Tour[]): string => {
   const q = query.toLowerCase()
   const budget = forcedBudget !== undefined ? forcedBudget : parseBudgetFromQuery(q)
 
@@ -674,13 +675,31 @@ const generateSmartFallbackReply = (query: string, tours: Tour[], forcedBudget?:
     }
   }
 
-  // ƯU TIÊN SỐ 5: Tìm kiếm theo ngân sách và thể loại
-  let candidates = [...activeTours]
-  if (isAskingNorth) {
+  // ƯU TIÊN SỐ 5: Tìm kiếm theo ngân sách và thể loại (kết hợp RAG ngữ nghĩa)
+  let candidates = (preferredTours && preferredTours.length > 0) ? [...preferredTours] : [...activeTours]
+  if (budget !== null && budget > 0) {
+    // Nếu khách dùng từ ước lượng (khoảng/tầm), cho phép dung sai 10-15%
+    const isSoft = /(?:khoảng|tầm|cỡ|chừng|khoảng chừng)/i.test(q)
+    const ceiling = isSoft ? budget * 1.15 : budget
+    const filteredBudget = candidates.filter((t) => t.price <= ceiling)
+    if (filteredBudget.length > 0) candidates = filteredBudget
+  }
+
+  const wantsFlower = /(?:hoa|mùa hoa|ngắm hoa|hoa mận|dã quỳ|hoa sen)/i.test(q)
+  const wantsHighland = /(?:vùng cao|núi|đèo|cao nguyên|núi rừng|tây bắc|đông bắc)/i.test(q)
+
+  if (wantsFlower || wantsHighland) {
+    const byFlowerMountain = candidates.filter((t) => {
+      const text = `${t.title} ${t.location} ${t.summary} ${t.highlights}`.toLowerCase()
+      if (wantsFlower && (text.includes('hoa') || text.includes('mận') || text.includes('dã quỳ') || text.includes('sen'))) return true
+      if (wantsHighland && (text.includes('vùng cao') || text.includes('núi') || text.includes('cao nguyên') || ['sơn la', 'hà giang', 'lào cai', 'yên bái', 'gia lai', 'kon tum'].some((p) => t.location.toLowerCase().includes(p)))) return true
+      return false
+    })
+    if (byFlowerMountain.length > 0) candidates = byFlowerMountain
+  } else if (isAskingNorth) {
     const north = candidates.filter((t) => northLocations.some((loc) => t.location.toLowerCase().includes(loc)))
     if (north.length > 0) candidates = north
-  }
-  if (q.includes('biển') || q.includes('đảo') || q.includes('lặn')) {
+  } else if (q.includes('biển') || q.includes('đảo') || q.includes('lặn')) {
     const bySea = candidates.filter((t) => t.category === 'Biển đảo' || t.title.toLowerCase().includes('biển'))
     if (bySea.length > 0) candidates = bySea
   } else if (q.includes('săn mây') || q.includes('leo núi') || q.includes('trekking') || q.includes('núi') || q.includes('phiêu lưu')) {
@@ -1731,7 +1750,7 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
 
   if (hasConflict3N2DNorth || directTourMatch) {
     // Sử dụng câu trả lời chuẩn xác trực tiếp để tránh AI bị ảo giác Hang Én hoặc đổi sai tour
-    reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+    reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget, retrievedTours)
   } else if (c.env.AI && typeof c.env.AI.run === 'function') {
     try {
       const model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
@@ -1755,13 +1774,13 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
       // KIỂM SOÁT ĐẦU RA (Output Guardrail):
       // Nếu khách hỏi Thái Nguyên mà AI lại bịa Tân Cương / Hồ Núi Cốc ngoài đời
       if (userQuery.toLowerCase().includes('thái nguyên') && (reply.includes('Tân Cương') || reply.includes('Núi Cốc'))) {
-        reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+        reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget, retrievedTours)
       }
       // Nếu khách có ngân sách mà AI lại mang tour vượt ngân sách vào
       if (extractedBudget !== null && !directTourMatch) {
         for (const t of allTours) {
           if (t.price > extractedBudget && reply.includes(t.title)) {
-            reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+            reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget, retrievedTours)
             break
           }
         }
@@ -1772,7 +1791,7 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
   }
 
   if (!reply) {
-    reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget)
+    reply = generateSmartFallbackReply(userQuery, allTours, extractedBudget, retrievedTours)
   }
 
   let suggestedTourIds: number[] = []
@@ -1828,6 +1847,29 @@ DATA CỦA ĐI ĐÂU > MỌI KIẾN THỨC BÊN NGOÀI > MỌI SUY ĐOÁN.`
     reply: cleanReply,
     suggestedTourIds,
     suggestedTours,
+  })
+})
+
+app.get('/rag/test', async (c) => {
+  const q = c.req.query('q') || 'ngắm hoa ở vùng cao'
+  let vectorErr = null
+  let embeddingResult = null
+  let queryResult = null
+  try {
+    const queryVector = await generateEmbedding(c.env.AI, q)
+    embeddingResult = { length: queryVector.length, sample: queryVector.slice(0, 3) }
+    if (c.env.VECTORIZE) {
+      const rawMatches = await querySimilarTours(c.env.VECTORIZE, queryVector, 5)
+      queryResult = rawMatches
+    }
+  } catch (e: any) {
+    vectorErr = { message: e.message, stack: e.stack }
+  }
+
+  return c.json({
+    vectorErr,
+    embeddingResult,
+    queryResult
   })
 })
 
